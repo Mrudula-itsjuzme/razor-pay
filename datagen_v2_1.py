@@ -13,7 +13,8 @@ def generate_case_v2_1(i: int, scenario: str, base_time: datetime, as_of_time: d
     tax_amt = (fee_amt * Decimal('0.18')).quantize(Decimal('0.01'))
     
     # NO RANDOM JITTER. Deterministic increment.
-    created_at = base_time + timedelta(minutes=i*5)
+    case_index = i - 30000
+    created_at = base_time + timedelta(minutes=case_index*5)
     
     # 1. System of Record
     order = Order(order_id=order_id, customer_id=f"cust_{i%500}", amount=amount, created_at=created_at, status="COMPLETED")
@@ -147,7 +148,9 @@ def generate_adversarial_case_v2_1(i: int, scenario: str, base_time: datetime, a
     amount = Decimal(random.randint(100, 50000))
     fee_amt = (amount * Decimal('0.02')).quantize(Decimal('0.01'))
     tax_amt = (fee_amt * Decimal('0.18')).quantize(Decimal('0.01'))
-    created_at = base_time + timedelta(minutes=i*5)
+    
+    case_index = i - 30000
+    created_at = base_time + timedelta(minutes=case_index*5)
     
     order = Order(order_id=order_id, customer_id=f"cust_adv_{i%100}", amount=amount, created_at=created_at, status="COMPLETED")
     payment = Payment(payment_id=f"pay_adv_{i}", order_id=order_id, amount=amount, captured_at=created_at + timedelta(seconds=10), status="CAPTURED", method="UPI")

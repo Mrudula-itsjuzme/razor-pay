@@ -29,6 +29,7 @@ def read_root():
 global_graph = ProvenanceGraph()
 global_cases = []
 engine = ReconciliationEngine(tolerance=Decimal('0.00'))
+engine.evaluation_time = datetime(2026, 8, 15, 12, 0, 0)
 
 class BenchResult(BaseModel):
     precision: float

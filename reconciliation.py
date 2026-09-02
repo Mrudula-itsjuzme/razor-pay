@@ -91,6 +91,8 @@ class ReconciliationEngine:
             if s.initiated_at > self.evaluation_time:
                 temporal_exception_subtype = "FUTURE_DATED_EVIDENCE"
             for b in bank_txs:
+                if b.timestamp > self.evaluation_time:
+                    temporal_exception_subtype = "FUTURE_DATED_EVIDENCE"
                 if b.reference == s.reference and b.timestamp < s.initiated_at:
                     temporal_exception_subtype = "CAUSAL_ORDER_VIOLATION"
 
@@ -99,7 +101,7 @@ class ReconciliationEngine:
             delta = (self.evaluation_time - latest_settlement).total_seconds() / 86400.0
             if delta < 0:
                 temporal_exception_subtype = "FUTURE_DATED_EVIDENCE"
-            elif delta > self.settlement_window_days and not temporal_exception_subtype:
+            elif not bank_txs and delta > self.settlement_window_days and not temporal_exception_subtype:
                 temporal_exception_subtype = "SETTLEMENT_SLA_BREACHED"
         
         if temporal_exception_subtype:
@@ -277,7 +279,7 @@ class ReconciliationEngine:
                 final_decision = "PENDING"
                 decision_authority = "TEMPORAL_DETERMINISTIC"
                 audit_trail["reason"] = "Settled but pending bank transaction within SLA."
-            elif proof_completeness == 1.0 and proof_validity == "PASS":
+            elif proof_completeness == 1.0 and proof_validity == "PASS" and not sla_breached:
                 final_decision = "RECONCILED"
                 decision_authority = "DETERMINISTIC"
                 audit_trail["reason"] = "Exact match across full provenance chain."
@@ -301,7 +303,7 @@ class ReconciliationEngine:
             if contract_type == "PARTIAL_REFUND":
                 if abs(expected_net - (my_observed_settlement - total_refund)) <= self.tolerance and settlement_valid:
                     # Make sure the bank transaction actually matches the settlement!
-                    if proof_completeness == 1.0 and proof_validity == "PASS":
+                    if proof_completeness == 1.0 and proof_validity == "PASS" and not sla_breached:
                         refund_math_valid = True
                         
             if refund_math_valid:
@@ -319,7 +321,7 @@ class ReconciliationEngine:
                 audit_trail["reason"] = "Reconciled accounting for pending refunds."
 
         # Layer 4: AI Exception Investigation
-        if final_decision in ["UNRESOLVED", "ESCALATED"] and max_layer >= 4:
+        if final_decision in ["UNRESOLVED", "ESCALATED"] and max_layer >= 4 and not sla_breached:
             audit_trail["layers_run"].append("Layer 4: AI Exception Investigation")
             ai_result = analyze_exception(graph, expected_net, observed_settlement)
             audit_trail["ai_investigation"] = ai_result
@@ -332,7 +334,7 @@ class ReconciliationEngine:
                     decision_authority = "AI_DIAGNOSIS"
                     audit_trail["reason"] = "AI Resolved: " + ", ".join(ai_result["likely_causes"])
                 elif ai_decision.startswith("RECONCILED"):
-                    if proof_validity == "PASS" and proof_completeness == 1.0:
+                    if proof_validity == "PASS" and proof_completeness == 1.0 and not sla_breached:
                         if "FEE" in ai_decision and "Fee" not in found_types:
                             final_decision = "ESCALATED"
                             decision_authority = "AI_REJECTED_MISSING_FEE_EVIDENCE"
@@ -405,7 +407,7 @@ class ReconciliationEngine:
                 exc_subtype = "BANK_PENDING_WITHIN_SLA"
                 severity = "LOW"
                 rec_action = "Wait for settlement window. No action required yet."
-            elif final_decision.startswith("EXCEPTION") or (not bank_txs and sla_breached):
+            elif sla_breached:
                 exc_type = "TEMPORAL_EXCEPTION"
                 exc_subtype = temporal_exception_subtype if temporal_exception_subtype else "SETTLEMENT_SLA_BREACHED"
                 severity = "HIGH"
