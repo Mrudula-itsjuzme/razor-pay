@@ -12,7 +12,7 @@ class ReconciliationEngine:
         # Use a fixed evaluation time slightly after the datagen window if none provided
         self.evaluation_time = evaluation_time or datetime(2026, 8, 15)
 
-    def reconcile_order(self, graph: nx.DiGraph, max_layer: int = 4) -> Dict[str, Any]:
+    def reconcile_order(self, graph: nx.DiGraph, max_layer: int = 4, target_order_id: Optional[str] = None) -> Dict[str, Any]:
         """
         Takes an order subgraph and attempts to reconcile it across the layers.
         Returns the audit trail.
@@ -24,14 +24,21 @@ class ReconciliationEngine:
                 nodes_by_type.setdefault(t, []).append(data['data'])
                 
         orders = nodes_by_type.get('Order', [])
+        if target_order_id:
+            orders = [o for o in orders if o.order_id == target_order_id]
+            
         if not orders:
             return {"status": "ERROR", "reason": "No Order found"}
         
         order = orders[0]
-        payments = nodes_by_type.get('Payment', [])
-        refunds = nodes_by_type.get('Refund', [])
-        fees = nodes_by_type.get('Fee', [])
-        taxes = nodes_by_type.get('Tax', [])
+        
+        # Filter payments, refunds, fees, taxes to ONLY those connected to the target order
+        payments = [p for p in nodes_by_type.get('Payment', []) if p.order_id == order.order_id]
+        target_payment_ids = set(p.payment_id for p in payments)
+        refunds = [r for r in nodes_by_type.get('Refund', []) if r.payment_id in target_payment_ids]
+        fees = [f for f in nodes_by_type.get('Fee', []) if f.payment_id in target_payment_ids]
+        taxes = [t for t in nodes_by_type.get('Tax', []) if t.payment_id in target_payment_ids]
+        
         settlements = nodes_by_type.get('Settlement', [])
         bank_txs = nodes_by_type.get('BankTransaction', [])
         
@@ -116,8 +123,7 @@ class ReconciliationEngine:
              conflicting_evidence.append("Refund exceeds payment amount")
         if len(payments) > len(set(p.payment_id for p in payments)):
              conflicting_evidence.append("Duplicate conflicting payment records found")
-        if len(orders) > 1:
-             conflicting_evidence.append("Multiple orders merged in single provenance graph")
+        # Removed len(orders) > 1 conflict to support N:1 settlements
         
         # Ambiguity detection: Two bank transactions with the same amount but different references
         unique_bank_refs = set(b.reference for b in bank_txs)
@@ -147,12 +153,47 @@ class ReconciliationEngine:
         if not bank_txs and sla_breached:
             broken_edges.append("Settlement → BankTransaction")
 
-        # Layer 1: Exact / Layer 2: Composite
+        # Layer 1: Exact
         if len(settlements) > 1:
             audit_trail["layers_run"].append("Layer 2: Composite (Split Settlement)")
         else:
             audit_trail["layers_run"].append("Layer 1: Exact")
-        if abs(expected_net - observed_settlement) <= self.tolerance:
+            
+        # N:1 accounting check: We must verify that our payment's settlement items sum to our expected net.
+        my_observed_settlement = Decimal('0.00')
+        for u, v, data in graph.edges(data=True):
+            if data.get('relation') == 'INCLUDED_IN':
+                u_id = u.replace("payment_", "").replace("refund_", "")
+                if u_id in target_payment_ids or u.replace("refund_", "") in [r.refund_id for r in refunds]:
+                     # Wait, just check if it's our item
+                     pass
+        
+        # Simpler approach: my_observed_settlement is sum of all settlement edges belonging to our payments/refunds
+        for u, v, data in graph.edges(data=True):
+            if data.get('relation') == 'INCLUDED_IN':
+                if u.startswith("payment_") and u.replace("payment_", "") in target_payment_ids:
+                    my_observed_settlement += data.get('amount', Decimal('0.00'))
+                elif u.startswith("refund_") and u.replace("refund_", "") in [r.refund_id for r in refunds]:
+                    my_observed_settlement -= data.get('amount', Decimal('0.00'))
+                    
+        # For N:1, if the settlement total matches all its items, and our item matches our expected net, it's safe.
+        # We also need to check if bank_tx amount matches the full settlement amount.
+        settlement_valid = True
+        for s in settlements:
+            s_items_total = sum(data.get('amount', Decimal('0.00')) for u, v, data in graph.edges(data=True) if v == f"settlement_{s.settlement_id}")
+            
+            # Allow settlement total to match (items_total - related_refunds)
+            s_payments = [u.replace("payment_", "") for u, v, data in graph.edges(data=True) if v == f"settlement_{s.settlement_id}" and u.startswith("payment_")]
+            s_related_refunds = sum(r.amount for r in refunds if r.payment_id in s_payments and r.status == 'PROCESSED')
+            
+            if abs(s.amount - s_items_total) > self.tolerance and abs(s.amount - (s_items_total - s_related_refunds)) > self.tolerance:
+                settlement_valid = False
+            # Check bank tx
+            b_total = sum(b.amount for b in bank_txs if b.reference == s.reference)
+            if b_total > 0 and abs(s.amount - b_total) > self.tolerance:
+                settlement_valid = False
+
+        if abs(expected_net - (my_observed_settlement - total_refund)) <= self.tolerance and settlement_valid:
             match_confidence = 1.0
             if contract_type == "PENDING_SETTLEMENT":
                 final_decision = "PENDING"
@@ -167,11 +208,33 @@ class ReconciliationEngine:
                 decision_authority = "INSUFFICIENT_EVIDENCE"
                 audit_trail["reason"] = "Insufficient evidence."
                 
-        # Layer 2: Composite
+        # Layer 2: Composite (Refunds and splits)
         if final_decision in ["UNRESOLVED", "ESCALATED"] and max_layer >= 2:
             audit_trail["layers_run"].append("Layer 2: Composite")
+            
+            # Partial Refund Logic: 
+            # If refund is processed, expected_net is payment - refund - fee - tax.
+            # But the SettlementItem linked to the payment might still be for the full expected amount (payment - fee - tax),
+            # while the Settlement node amount is final (payment - refund - fee - tax).
+            # The AI proves this by verifying: expected_net == (my_observed_settlement - total_refund)
+            # AND the Settlement total matches BankTx total.
+            
+            refund_math_valid = False
+            if contract_type == "PARTIAL_REFUND":
+                if abs(expected_net - (my_observed_settlement - total_refund)) <= self.tolerance and settlement_valid:
+                    # Make sure the bank transaction actually matches the settlement!
+                    if proof_completeness == 1.0 and proof_validity == "PASS":
+                        refund_math_valid = True
+                        
+            if refund_math_valid:
+                match_confidence = 1.0
+                final_decision = "RECONCILED"
+                decision_authority = "COMPOSITE_DETERMINISTIC"
+                audit_trail["reason"] = "Reconciled composite refund accounting."
+                
+            # Pending Refunds
             pending_refunds = sum(r.amount for r in refunds if r.status == 'PENDING')
-            if not sla_breached and abs(expected_net - pending_refunds - observed_settlement) <= self.tolerance:
+            if not sla_breached and pending_refunds > 0 and abs(expected_net - pending_refunds - my_observed_settlement) <= self.tolerance:
                 match_confidence = 1.0
                 final_decision = "PENDING"
                 decision_authority = "COMPOSITE_DETERMINISTIC"

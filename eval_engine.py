@@ -38,7 +38,7 @@ def calculate_proof_debt(engine, cases, graph_instance):
     
     for order_id, _ in cases:
         subgraph = graph_instance.get_subgraph_for_order(order_id)
-        res = engine.reconcile_order(subgraph)
+        res = engine.reconcile_order(subgraph, target_order_id=order_id)
         decision = res["decision"]
         exposure = Decimal(res.get("expected_net", "0.00"))
         
@@ -80,7 +80,7 @@ def safe_automation_frontier(engine, cases, graph_instance):
         
         for order_id, ground_truth in cases:
             subgraph = graph_instance.get_subgraph_for_order(order_id)
-            res = engine.reconcile_order(subgraph)
+            res = engine.reconcile_order(subgraph, target_order_id=order_id)
             
             decision = res["decision"]
             completeness = res.get("proof_completeness", 0)
@@ -124,7 +124,7 @@ def evidence_degradation_experiment(engine, base_cases, graph_instance):
             degraded_subgraph = subgraph.copy()
             degraded_subgraph.remove_nodes_from(nodes_to_remove)
             
-            res = engine.reconcile_order(degraded_subgraph)
+            res = engine.reconcile_order(degraded_subgraph, target_order_id=order_id)
             if "decision" not in res:
                 continue
             decision = res["decision"]

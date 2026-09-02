@@ -66,7 +66,7 @@ def main():
     
     for order_id, _ in cpx_cases:
         subgraph = cpx_graph.get_subgraph_for_order(order_id)
-        res = engine.reconcile_order(subgraph)
+        res = engine.reconcile_order(subgraph, target_order_id=order_id)
         exposure = Decimal(res.get("expected_net", "0.00"))
         
         decision = res.get("decision", "")
@@ -98,8 +98,8 @@ def main():
     
     id_records = len(cpx_rec) == len(cpx_rec2)  # Simplified check
     
-    run1 = [engine.reconcile_order(cpx_graph.get_subgraph_for_order(c[0]), max_layer=4) for c in cpx_cases]
-    run2 = [engine.reconcile_order(cpx_graph2.get_subgraph_for_order(c[0]), max_layer=4) for c in cpx_cases2]
+    run1 = [engine.reconcile_order(cpx_graph.get_subgraph_for_order(c[0]), max_layer=4, target_order_id=c[0]) for c in cpx_cases]
+    run2 = [engine.reconcile_order(cpx_graph2.get_subgraph_for_order(c[0]), max_layer=4, target_order_id=c[0]) for c in cpx_cases2]
     
     id_decisions = sum(1 for r1, r2 in zip(run1, run2) if r1.get('decision') == r2.get('decision'))
     
@@ -115,9 +115,9 @@ def main():
     for i, c in enumerate(cpx_cases[:10]):
         order_id, gt = c
         subgraph = cpx_graph.get_subgraph_for_order(order_id)
-        ex_res = engine.reconcile_order(subgraph, max_layer=1)
-        ru_res = engine.reconcile_order(subgraph, max_layer=3)
-        co_res = engine.reconcile_order(subgraph, max_layer=4)
+        ex_res = engine.reconcile_order(subgraph, max_layer=1, target_order_id=order_id)
+        ru_res = engine.reconcile_order(subgraph, max_layer=3, target_order_id=order_id)
+        co_res = engine.reconcile_order(subgraph, max_layer=4, target_order_id=order_id)
         
         diff_cases.append({
             "case_id": order_id,
@@ -140,9 +140,24 @@ def main():
             "controller": co_cpx
         },
         "D": {
-            "exact": {"tp": ex_cpx.get('tp'), "fp": ex_cpx.get('fp'), "tn": ex_cpx.get('tn'), "fn": ex_cpx.get('fn')},
-            "rules": {"tp": ru_cpx.get('tp'), "fp": ru_cpx.get('fp'), "tn": ru_cpx.get('tn'), "fn": ru_cpx.get('fn')},
-            "controller": {"tp": co_cpx.get('tp'), "fp": co_cpx.get('fp'), "tn": co_cpx.get('tn'), "fn": co_cpx.get('fn')}
+            "exact": {
+                "tp": ex_cpx.get('tp'), "fp": ex_cpx.get('fp'), "tn": ex_cpx.get('tn'), "fn": ex_cpx.get('fn'),
+                "proof_precision": ex_cpx.get('proof_precision'), "proof_recall": ex_cpx.get('proof_recall'), "proof_f1": ex_cpx.get('proof_f1'),
+                "proof_complete_closure_rate": ex_cpx.get('proof_complete_closure_rate'), "right_answer_wrong_proof_rate": ex_cpx.get('right_answer_wrong_proof_rate'),
+                "safe_auto_closure_rate": ex_cpx.get('safe_auto_closure_rate'), "over_abstention_rate": ex_cpx.get('over_abstention_rate')
+            },
+            "rules": {
+                "tp": ru_cpx.get('tp'), "fp": ru_cpx.get('fp'), "tn": ru_cpx.get('tn'), "fn": ru_cpx.get('fn'),
+                "proof_precision": ru_cpx.get('proof_precision'), "proof_recall": ru_cpx.get('proof_recall'), "proof_f1": ru_cpx.get('proof_f1'),
+                "proof_complete_closure_rate": ru_cpx.get('proof_complete_closure_rate'), "right_answer_wrong_proof_rate": ru_cpx.get('right_answer_wrong_proof_rate'),
+                "safe_auto_closure_rate": ru_cpx.get('safe_auto_closure_rate'), "over_abstention_rate": ru_cpx.get('over_abstention_rate')
+            },
+            "controller": {
+                "tp": co_cpx.get('tp'), "fp": co_cpx.get('fp'), "tn": co_cpx.get('tn'), "fn": co_cpx.get('fn'),
+                "proof_precision": co_cpx.get('proof_precision'), "proof_recall": co_cpx.get('proof_recall'), "proof_f1": co_cpx.get('proof_f1'),
+                "proof_complete_closure_rate": co_cpx.get('proof_complete_closure_rate'), "right_answer_wrong_proof_rate": co_cpx.get('right_answer_wrong_proof_rate'),
+                "safe_auto_closure_rate": co_cpx.get('safe_auto_closure_rate'), "over_abstention_rate": co_cpx.get('over_abstention_rate')
+            }
         },
         "E": diff_cases,
         "F": {

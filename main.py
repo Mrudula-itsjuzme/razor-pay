@@ -132,7 +132,7 @@ def reconcile_case(order_id: str):
         subgraph = subgraph.copy()
         subgraph.remove_nodes_from(nodes_to_remove)
         
-    result = engine.reconcile_order(subgraph)
+    result = engine.reconcile_order(subgraph, target_order_id=order_id)
     return result
 
 @app.get("/api/cases")
@@ -142,7 +142,7 @@ def list_cases():
         order_id = c[0]
         ground_truth = c[1]
         subgraph = global_graph.get_subgraph_for_order(order_id)
-        res = engine.reconcile_order(subgraph)
+        res = engine.reconcile_order(subgraph, target_order_id=order_id)
         result.append({
             "order_id": order_id, 
             "ground_truth": ground_truth,
@@ -213,7 +213,7 @@ def evaluate_system(max_layer: int, eval_cases: list, graph_instance=None):
     start_time = time.time()
     for order_id, ground_truth in eval_cases:
         subgraph = graph_instance.get_subgraph_for_order(order_id)
-        res = engine.reconcile_order(subgraph, max_layer=max_layer)
+        res = engine.reconcile_order(subgraph, max_layer=max_layer, target_order_id=order_id)
         
         # Guard against missing cases
         if "decision" not in res:
@@ -280,9 +280,14 @@ def evaluate_system(max_layer: int, eval_cases: list, graph_instance=None):
                 tn += 1
                 case_correct = True
             else:
-                exc_fp += 1
-                fn += 1
-                failure_taxonomy["UNNECESSARY_ABSTENTION"] += 1
+                if is_bad:
+                    # It's a bad case, and we abstained via Exception. This is still a True Negative for safety.
+                    tn += 1
+                    case_correct = True
+                else:
+                    exc_fp += 1
+                    fn += 1
+                    failure_taxonomy["UNNECESSARY_ABSTENTION"] += 1
         else:
             if is_bad:
                 tn += 1
@@ -463,7 +468,7 @@ def run_batch():
     
     for order_id, ground_truth in global_cases:
         subgraph = global_graph.get_subgraph_for_order(order_id)
-        res = engine.reconcile_order(subgraph)
+        res = engine.reconcile_order(subgraph, target_order_id=order_id)
         decision = res["decision"]
         is_unresolvable = (ground_truth in ["UNRESOLVABLE", "MISSING_FEE_EVIDENCE"])
         
