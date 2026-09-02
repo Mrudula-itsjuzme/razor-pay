@@ -29,7 +29,6 @@ def read_root():
 global_graph = ProvenanceGraph()
 global_cases = []
 engine = ReconciliationEngine(tolerance=Decimal('0.00'))
-engine.evaluation_time = datetime(2026, 8, 15, 12, 0, 0)
 
 class BenchResult(BaseModel):
     precision: float
@@ -123,7 +122,7 @@ def ingest_data(num_orders: int = 2500):
 degraded_orders = set()
 
 @app.get("/api/reconcile/{order_id}")
-def reconcile_case(order_id: str):
+def reconcile_case(order_id: str, as_of_time: Optional[datetime] = None):
     subgraph = global_graph.get_subgraph_for_order(order_id)
     if not subgraph.nodes:
         raise HTTPException(status_code=404, detail="Order not found")
@@ -133,7 +132,7 @@ def reconcile_case(order_id: str):
         subgraph = subgraph.copy()
         subgraph.remove_nodes_from(nodes_to_remove)
         
-    result = engine.reconcile_order(subgraph, target_order_id=order_id)
+    result = engine.reconcile_order(subgraph, target_order_id=order_id, as_of_time=as_of_time)
     return result
 
 @app.get("/api/cases")

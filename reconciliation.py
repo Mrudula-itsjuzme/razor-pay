@@ -6,13 +6,12 @@ from ai_agent import analyze_exception
 from models import SettlementItem
 
 class ReconciliationEngine:
-    def __init__(self, tolerance: Decimal = Decimal('0.00'), settlement_window_days: int = 3, evaluation_time: Optional[datetime] = None):
+    def __init__(self, tolerance: Decimal = Decimal('0.00'), settlement_window_days: int = 3):
         self.tolerance = tolerance
         self.settlement_window_days = settlement_window_days
-        # Use a fixed evaluation time slightly after the datagen window if none provided
-        self.evaluation_time = evaluation_time or datetime(2026, 8, 15)
 
-    def reconcile_order(self, graph: nx.DiGraph, max_layer: int = 4, target_order_id: Optional[str] = None) -> Dict[str, Any]:
+    def reconcile_order(self, graph: nx.DiGraph, max_layer: int = 4, target_order_id: Optional[str] = None, as_of_time: Optional[datetime] = None) -> Dict[str, Any]:
+        evaluation_time = as_of_time or datetime.now()
         """
         Takes an order subgraph and attempts to reconcile it across the layers.
         Returns the audit trail.
@@ -75,7 +74,7 @@ class ReconciliationEngine:
         sla_breached = False
         
         for o in orders:
-            if o.created_at > self.evaluation_time:
+            if o.created_at > evaluation_time:
                 temporal_exception_subtype = "FUTURE_DATED_EVIDENCE"
             for p in payments:
                 if p.captured_at < o.created_at:
@@ -88,17 +87,17 @@ class ReconciliationEngine:
                         temporal_exception_subtype = "CAUSAL_ORDER_VIOLATION"
 
         for s in settlements:
-            if s.initiated_at > self.evaluation_time:
+            if s.initiated_at > evaluation_time:
                 temporal_exception_subtype = "FUTURE_DATED_EVIDENCE"
             for b in bank_txs:
-                if b.timestamp > self.evaluation_time:
+                if b.timestamp > evaluation_time:
                     temporal_exception_subtype = "FUTURE_DATED_EVIDENCE"
                 if b.reference == s.reference and b.timestamp < s.initiated_at:
                     temporal_exception_subtype = "CAUSAL_ORDER_VIOLATION"
 
         latest_settlement = max([s.initiated_at for s in settlements], default=None) if settlements else None
         if latest_settlement:
-            delta = (self.evaluation_time - latest_settlement).total_seconds() / 86400.0
+            delta = (evaluation_time - latest_settlement).total_seconds() / 86400.0
             if delta < 0:
                 temporal_exception_subtype = "FUTURE_DATED_EVIDENCE"
             elif not bank_txs and delta > self.settlement_window_days and not temporal_exception_subtype:

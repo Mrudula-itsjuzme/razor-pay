@@ -50,7 +50,7 @@ def test_reconciliation_exact_layer():
     g.link_bank_transaction_to_settlement("b1", "s1")
     
     subgraph = g.get_subgraph_for_order("test1")
-    res = engine.reconcile_order(subgraph, max_layer=1, target_order_id="test1")
+    res = engine.reconcile_order(subgraph, max_layer=1, target_order_id="test1", as_of_time=datetime(2026, 8, 15, 12, 0, 0))
     assert res["decision"] == "RECONCILED"
 
 def test_reconciliation_missing_bank_tx():
@@ -66,7 +66,7 @@ def test_reconciliation_missing_bank_tx():
     g.add_settlement(settlement, [si])
     
     subgraph = g.get_subgraph_for_order("test2")
-    res = engine.reconcile_order(subgraph, max_layer=1, target_order_id="test2")
+    res = engine.reconcile_order(subgraph, max_layer=1, target_order_id="test2", as_of_time=datetime(2026, 8, 15, 12, 0, 0))
     
     assert res["decision"] == "PENDING"
     assert "proof_certificate" in res
@@ -96,10 +96,7 @@ def test_adversarial_wrong_bank_transaction_rejected():
     # The bank tx will NOT be linked by graph.py because reference mismatch.
     
     subgraph = g.get_subgraph_for_order("test_adv_1")
-    old_eval = engine.evaluation_time
-    engine.evaluation_time = dt + timedelta(days=5)
-    res = engine.reconcile_order(subgraph, max_layer=4, target_order_id="test_adv_1")
-    engine.evaluation_time = old_eval
+    res = engine.reconcile_order(subgraph, max_layer=4, target_order_id="test_adv_1", as_of_time=dt + timedelta(days=5))
     
     # Should escalate because bank tx is missing from subgraph and SLA breached
     assert res["decision"] == "ESCALATED"
@@ -122,7 +119,7 @@ def test_currency_mismatch_escalates():
     g.add_bank_transaction(bank_tx)
     
     subgraph = g.get_subgraph_for_order("test_curr")
-    res = engine.reconcile_order(subgraph, max_layer=4, target_order_id="test_curr")
+    res = engine.reconcile_order(subgraph, max_layer=4, target_order_id="test_curr", as_of_time=datetime(2026, 8, 15, 12, 0, 0))
     
     assert res["proof_certificate"]["proof_validity"] == "FAIL"
     assert "Currency mismatch" in res["conflicting_evidence"][0]
@@ -148,7 +145,7 @@ def test_wrong_refund_perfect_discrepancy():
     g.add_refund(wrong_refund)
     
     subgraph = g.get_subgraph_for_order("test_wr")
-    res = engine.reconcile_order(subgraph, max_layer=4, target_order_id="test_wr")
+    res = engine.reconcile_order(subgraph, max_layer=4, target_order_id="test_wr", as_of_time=datetime(2026, 8, 15, 12, 0, 0))
     
     assert res["decision"] == "UNRESOLVED" or res["decision"] == "ESCALATED"
 
@@ -321,7 +318,7 @@ def test_exception_structure():
     # Missing everything else
     g.add_order(order)
     subgraph = g.get_subgraph_for_order("test_str")
-    res = engine.reconcile_order(subgraph, target_order_id="test_str", max_layer=4)
+    res = engine.reconcile_order(subgraph, target_order_id="test_str", max_layer=4, as_of_time=datetime(2026, 8, 15, 12, 0, 0))
     
     exc = res.get("exception_details")
     assert exc is not None
@@ -342,7 +339,7 @@ def test_contradiction_types():
     g.add_fee(fee2)
     
     subgraph = g.get_subgraph_for_order("test_dup")
-    res = engine.reconcile_order(subgraph, target_order_id="test_dup", max_layer=4)
+    res = engine.reconcile_order(subgraph, target_order_id="test_dup", max_layer=4, as_of_time=datetime(2026, 8, 15, 12, 0, 0))
     exc = res.get("exception_details")
     assert exc["exception_type"] == "CONFLICTING_EVIDENCE"
     assert exc["exception_subtype"] == "DUPLICATE_FEE_RECORDS"
@@ -363,7 +360,7 @@ def test_temporal_negative_controls():
     g_a.add_order(order)
     g_a.add_payment(payment)
     g_a.add_settlement(s1, [si1])
-    res_a = engine.reconcile_order(g_a.get_subgraph_for_order("nc1"), target_order_id="nc1", max_layer=4)
+    res_a = engine.reconcile_order(g_a.get_subgraph_for_order("nc1"), target_order_id="nc1", max_layer=4, as_of_time=datetime(2026, 8, 15, 12, 0, 0))
     assert res_a["decision"] == "PENDING"
     
     # B. settlement age = SLA exactly -> PENDING
@@ -375,14 +372,11 @@ def test_temporal_negative_controls():
     g_b.add_payment(payment)
     g_b.add_settlement(s2, [si2])
     # Set engine eval time specifically for boundary test
-    old_eval = engine.evaluation_time
-    engine.evaluation_time = datetime(2026, 8, 15, 0, 0, 0)
-    res_b = engine.reconcile_order(g_b.get_subgraph_for_order("nc1"), target_order_id="nc1", max_layer=4)
+    res_b = engine.reconcile_order(g_b.get_subgraph_for_order("nc1"), target_order_id="nc1", max_layer=4, as_of_time=datetime(2026, 8, 15, 0, 0, 0))
     assert res_b["decision"] == "PENDING"
     
     # C. settlement age = SLA + 1 second -> TEMPORAL_EXCEPTION
-    engine.evaluation_time = datetime(2026, 8, 15, 0, 0, 1)
-    res_c = engine.reconcile_order(g_b.get_subgraph_for_order("nc1"), target_order_id="nc1", max_layer=4)
+    res_c = engine.reconcile_order(g_b.get_subgraph_for_order("nc1"), target_order_id="nc1", max_layer=4, as_of_time=datetime(2026, 8, 15, 0, 0, 1))
     assert res_c["exception_details"]["exception_type"] == "TEMPORAL_EXCEPTION"
     assert res_c["exception_details"]["exception_subtype"] == "SETTLEMENT_SLA_BREACHED"
     
@@ -393,8 +387,7 @@ def test_temporal_negative_controls():
     g_d.add_order(order)
     g_d.add_payment(payment)
     g_d.add_settlement(s4, [si4])
-    engine.evaluation_time = datetime(2026, 8, 15, 0, 0, 0)
-    res_d = engine.reconcile_order(g_d.get_subgraph_for_order("nc1"), target_order_id="nc1", max_layer=4)
+    res_d = engine.reconcile_order(g_d.get_subgraph_for_order("nc1"), target_order_id="nc1", max_layer=4, as_of_time=datetime(2026, 8, 15, 0, 0, 0))
     assert res_d["exception_details"]["exception_type"] == "TEMPORAL_EXCEPTION"
     assert res_d["exception_details"]["exception_subtype"] == "FUTURE_DATED_EVIDENCE"
     
@@ -405,12 +398,11 @@ def test_temporal_negative_controls():
     g_e.add_order(order)
     g_e.add_payment(payment)
     g_e.add_settlement(s5, [si5])
-    res_e = engine.reconcile_order(g_e.get_subgraph_for_order("nc1"), target_order_id="nc1", max_layer=4)
+    res_e = engine.reconcile_order(g_e.get_subgraph_for_order("nc1"), target_order_id="nc1", max_layer=4, as_of_time=datetime(2026, 8, 15, 0, 0, 0))
     assert res_e["exception_details"]["exception_type"] == "TEMPORAL_EXCEPTION"
     assert res_e["exception_details"]["exception_subtype"] == "CAUSAL_ORDER_VIOLATION"
     
     # Restore evaluation time
-    engine.evaluation_time = old_eval
 
 def test_adversarial_lure_negative_controls():
     # F, G, H, I
@@ -435,7 +427,7 @@ def test_adversarial_lure_negative_controls():
     g_f.add_settlement(s_f, [si_f])
     g_f.add_bank_transaction(b_f_lure) # Not linked to settlement
     
-    res_f = engine.reconcile_order(g_f.get_subgraph_for_order("nc2"), target_order_id="nc2", max_layer=4)
+    res_f = engine.reconcile_order(g_f.get_subgraph_for_order("nc2"), target_order_id="nc2", max_layer=4, as_of_time=datetime(2026, 8, 15, 12, 0, 0))
     assert res_f["decision"] == "PENDING"
     assert "b_f_lure" not in str(res_f.get("proof_certificate", {}))
     
@@ -451,7 +443,7 @@ def test_adversarial_lure_negative_controls():
     g_g.add_settlement(s_g, [si_g])
     g_g.add_bank_transaction(b_f_lure)
     
-    res_g = engine.reconcile_order(g_g.get_subgraph_for_order("nc2"), target_order_id="nc2", max_layer=4)
+    res_g = engine.reconcile_order(g_g.get_subgraph_for_order("nc2"), target_order_id="nc2", max_layer=4, as_of_time=datetime(2026, 8, 15, 12, 0, 0))
     assert res_g["exception_details"]["exception_type"] == "TEMPORAL_EXCEPTION"
     
     # H. same amount + correct reference + complete valid evidence -> RECONCILED
@@ -459,7 +451,7 @@ def test_adversarial_lure_negative_controls():
     g_g.add_bank_transaction(b_h_correct)
     g_g.link_bank_transaction_to_settlement("b_h_correct", "s_g")
     
-    res_h = engine.reconcile_order(g_g.get_subgraph_for_order("nc2"), target_order_id="nc2", max_layer=4)
+    res_h = engine.reconcile_order(g_g.get_subgraph_for_order("nc2"), target_order_id="nc2", max_layer=4, as_of_time=datetime(2026, 8, 15, 12, 0, 0))
     assert res_h["decision"] == "RECONCILED"
     assert "b_h_correct" in str(res_h.get("proof_certificate", {}))
     # I. unrelated lure ID absent from target proof certificate
@@ -488,15 +480,13 @@ def test_complete_proof_temporal_negative_controls():
     g_a.add_tax(tax)
     g_a.add_settlement(s_a, [si_a])
     
-    old_eval = engine.evaluation_time
-    engine.evaluation_time = datetime(2026, 8, 15, 0, 0, 0)
     
     # A. Bank > as_of_time
     b_a = BankTransaction(bank_transaction_id="b_a", amount=expected_amount, timestamp=datetime(2026, 8, 16, 12, 0, 0), reference="UTR_NC3", direction="CREDIT")
     g_a.add_bank_transaction(b_a)
     g_a.link_bank_transaction_to_settlement("b_a", "s_a")
     
-    res_a = engine.reconcile_order(g_a.get_subgraph_for_order("nc3"), target_order_id="nc3", max_layer=4)
+    res_a = engine.reconcile_order(g_a.get_subgraph_for_order("nc3"), target_order_id="nc3", max_layer=4, as_of_time=datetime(2026, 8, 15, 12, 0, 0))
     assert res_a["decision"] == "ESCALATED"
     assert res_a["exception_details"]["exception_type"] == "TEMPORAL_EXCEPTION"
     
@@ -514,7 +504,7 @@ def test_complete_proof_temporal_negative_controls():
     g_b.add_bank_transaction(b_b)
     g_b.link_bank_transaction_to_settlement("b_b", "s_b")
     
-    res_b = engine.reconcile_order(g_b.get_subgraph_for_order("nc3"), target_order_id="nc3", max_layer=4)
+    res_b = engine.reconcile_order(g_b.get_subgraph_for_order("nc3"), target_order_id="nc3", max_layer=4, as_of_time=datetime(2026, 8, 15, 12, 0, 0))
     assert res_b["decision"] == "ESCALATED"
     assert res_b["exception_details"]["exception_type"] == "TEMPORAL_EXCEPTION"
     assert res_b["exception_details"]["exception_subtype"] == "CAUSAL_ORDER_VIOLATION"
@@ -533,11 +523,10 @@ def test_complete_proof_temporal_negative_controls():
     g_c.add_bank_transaction(b_c)
     g_c.link_bank_transaction_to_settlement("b_c", "s_c")
     
-    res_c = engine.reconcile_order(g_c.get_subgraph_for_order("nc3"), target_order_id="nc3", max_layer=4)
+    res_c = engine.reconcile_order(g_c.get_subgraph_for_order("nc3"), target_order_id="nc3", max_layer=4, as_of_time=datetime(2026, 8, 15, 12, 0, 0))
     assert res_c["decision"] == "RECONCILED"
     
     # D. proof_completeness mathematical check
     assert res_b["proof_completeness"] == 1.0
     assert res_b["exception_details"]["closure_authorized"] is False
 
-    engine.evaluation_time = old_eval
