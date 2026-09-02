@@ -4,6 +4,7 @@ import random
 from decimal import Decimal
 import datetime
 from datagen import generate_demo_dataset, generate_adversarial_dataset, generate_complex_dataset
+from datagen_v2_1 import generate_complex_dataset_v2_1
 from graph import ProvenanceGraph
 from main import engine, evaluate_system, global_graph
 from eval_engine import calculate_proof_debt, safe_automation_frontier, evidence_degradation_experiment
@@ -34,8 +35,9 @@ def make_graph(records):
     return g
 
 def main():
-    print("Generating complex dataset...")
-    cpx_rec, cpx_cases = generate_complex_dataset()
+    print("Generating complex dataset v2.1...")
+    cpx_rec, cpx_cases, as_of_time = generate_complex_dataset_v2_1()
+    engine.evaluation_time = as_of_time
     cpx_graph = make_graph(cpx_rec)
     
     # Stratified distribution
@@ -68,11 +70,11 @@ def main():
         else: p_state = "ESCALATED"
         
         # Expected State
-        if gt == "PENDING_BANK_SLA_SAFE":
+        if gt in ["PENDING_BANK_SLA_SAFE", "ADV_SAME_AMOUNT_WRONG_TX"]:
             e_state = "PENDING"
         else:
             is_unresolvable = (gt in ["UNRESOLVABLE", "MISSING_FEE_EVIDENCE", "CONTRADICTORY_FEE_RECORDS"]) or (
-                "ADV" in gt and gt not in ["ADV_CUSTOMER_COMPONENT_CONTAMINATION", "ADV_TIMESTAMP_LURE"]
+                "ADV" in gt and gt not in ["ADV_CUSTOMER_COMPONENT_CONTAMINATION", "ADV_TIMESTAMP_LURE", "ADV_SAME_AMOUNT_WRONG_TX"]
             )
             is_exception = (gt in ["DELAYED_SETTLEMENT_EXCEPTION"])
             if is_unresolvable or is_exception:
@@ -96,7 +98,7 @@ def main():
     policy_metrics, cm = calculate_policy_metrics_v2(expected_v2, predicted_v2)
     
     final = {
-        "dataset_version": "COMPLEX_BENCHMARK_V2",
+        "dataset_version": "COMPLEX_BENCHMARK_V2_1",
         "seed": 4242,
         "case_count": len(cpx_cases),
         "record_count": len(cpx_rec),
@@ -143,15 +145,15 @@ def main():
                 return float(obj)
             return super(DecimalEncoder, self).default(obj)
             
-    with open('final_evaluation_v2.json', 'w') as f:
+    with open('final_evaluation_v2_1.json', 'w') as f:
         json.dump(final, f, indent=2, cls=DecimalEncoder)
         
-    print("Wrote final_evaluation_v2.json")
+    print("Wrote final_evaluation_v2_1.json")
     
     # Write MD
-    with open('final_evaluation_v2.md', 'w') as f:
-        f.write("# Final Evaluation V2\n\n")
-        f.write(f"**Dataset Version:** {final['dataset_version']}\n")
+    with open('final_evaluation_v2_1.md', 'w') as f:
+        f.write("# Final Evaluation V2.1\n\n")
+        f.write(f"**Dataset Version:** COMPLEX_BENCHMARK_V2_1\n")
         f.write(f"**Case Count:** {final['case_count']}\n")
         f.write(f"**Total Batch Exposure:** ₹{final['total_batch_exposure']:.2f}\n")
         f.write("\n## Policy Metrics\n")
@@ -161,7 +163,7 @@ def main():
         f.write("\n## Financial Partition\n")
         for k, v in final['financial_partition'].items():
             f.write(f"- {k}: {v['count']} cases (₹{v['exposure']:.2f})\n")
-    print("Wrote final_evaluation_v2.md")
+    print("Wrote final_evaluation_v2_1.md")
 
 if __name__ == "__main__":
     main()

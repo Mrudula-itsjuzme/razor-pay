@@ -71,9 +71,38 @@ class ReconciliationEngine:
         observed_settlement = sum(settlement_edges)
         audit_trail["observed_settlement"] = str(observed_settlement)
 
+        temporal_exception_subtype = None
         sla_breached = False
+        
+        for o in orders:
+            if o.created_at > self.evaluation_time:
+                temporal_exception_subtype = "FUTURE_DATED_EVIDENCE"
+            for p in payments:
+                if p.captured_at < o.created_at:
+                    temporal_exception_subtype = "CAUSAL_ORDER_VIOLATION"
+                for s in settlements:
+                    if s.initiated_at < p.captured_at:
+                        temporal_exception_subtype = "CAUSAL_ORDER_VIOLATION"
+                for r in refunds:
+                    if r.created_at < p.captured_at:
+                        temporal_exception_subtype = "CAUSAL_ORDER_VIOLATION"
+
+        for s in settlements:
+            if s.initiated_at > self.evaluation_time:
+                temporal_exception_subtype = "FUTURE_DATED_EVIDENCE"
+            for b in bank_txs:
+                if b.reference == s.reference and b.timestamp < s.initiated_at:
+                    temporal_exception_subtype = "CAUSAL_ORDER_VIOLATION"
+
         latest_settlement = max([s.initiated_at for s in settlements], default=None) if settlements else None
-        if latest_settlement and (self.evaluation_time - latest_settlement).days > self.settlement_window_days:
+        if latest_settlement:
+            delta = (self.evaluation_time - latest_settlement).total_seconds() / 86400.0
+            if delta < 0:
+                temporal_exception_subtype = "FUTURE_DATED_EVIDENCE"
+            elif delta > self.settlement_window_days and not temporal_exception_subtype:
+                temporal_exception_subtype = "SETTLEMENT_SLA_BREACHED"
+        
+        if temporal_exception_subtype:
             sla_breached = True
         
         # --- EVIDENCE CONTRACT & PROOF GENERATION ---
@@ -377,8 +406,8 @@ class ReconciliationEngine:
                 severity = "LOW"
                 rec_action = "Wait for settlement window. No action required yet."
             elif final_decision.startswith("EXCEPTION") or (not bank_txs and sla_breached):
-                exc_type = "MISSING_EVIDENCE"
-                exc_subtype = "BANK_MISSING_OUTSIDE_SLA"
+                exc_type = "TEMPORAL_EXCEPTION"
+                exc_subtype = temporal_exception_subtype if temporal_exception_subtype else "SETTLEMENT_SLA_BREACHED"
                 severity = "HIGH"
                 rec_action = "Verify settlement status and retrieve bank confirmation."
             elif "Fee" not in found_types:

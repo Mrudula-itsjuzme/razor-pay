@@ -1,26 +1,26 @@
 {
-  "dataset_version": "COMPLEX_BENCHMARK_V2",
+  "dataset_version": "COMPLEX_BENCHMARK_V2_1",
   "seed": 4242,
   "case_count": 105,
-  "record_count": 830,
+  "record_count": 835,
   "financial_denominator_definition": "expected net settlement value per order",
-  "total_batch_exposure": 2724000.01,
+  "total_batch_exposure": 2511886.35,
   "financial_partition": {
     "PROVEN": {
       "count": 30,
-      "exposure": 731479.8
+      "exposure": 748882.21
     },
     "PENDING_WITHIN_SLA": {
-      "count": 5,
-      "exposure": 101537.78
+      "count": 10,
+      "exposure": 218896.18
     },
     "MISSING_EVIDENCE": {
-      "count": 35,
-      "exposure": 946885.7
+      "count": 25,
+      "exposure": 571601.84
     },
     "CONFLICTING_EVIDENCE": {
       "count": 25,
-      "exposure": 688298.49
+      "exposure": 582968.35
     },
     "AMBIGUOUS_PROVENANCE": {
       "count": 0,
@@ -31,8 +31,8 @@
       "exposure": 0.0
     },
     "TEMPORAL_EXCEPTION": {
-      "count": 10,
-      "exposure": 255798.24
+      "count": 15,
+      "exposure": 389537.77
     },
     "UNRESOLVABLE": {
       "count": 0,
@@ -44,24 +44,25 @@
     }
   },
   "proof_debt": {
-    "total_unresolved_exposure": 1992520.21,
-    "pending_exposure": 101537.78,
-    "actionable_proof_debt": 1890982.43,
+    "total_unresolved_exposure": 1763004.14,
+    "pending_exposure": 218896.18,
+    "actionable_proof_debt": 1544107.96,
     "by_cause": {
-      "SETTLEMENT_SLA_BREACHED": 255798.24,
-      "FEE_RECORD_MISSING": 946885.7,
-      "DUPLICATE_FEE_RECORDS": 120610.76,
-      "DUPLICATE_SETTLEMENT_REFERENCE": 274384.01,
-      "CURRENCY_MISMATCH": 140759.78,
-      "DUPLICATE_BANK_IMPORT": 152543.94
+      "SETTLEMENT_SLA_BREACHED": 132325.64,
+      "FEE_RECORD_MISSING": 571601.84,
+      "DUPLICATE_FEE_RECORDS": 63642.69,
+      "DUPLICATE_SETTLEMENT_REFERENCE": 276066.35,
+      "FUTURE_DATED_EVIDENCE": 257212.13,
+      "CURRENCY_MISMATCH": 108800.25,
+      "DUPLICATE_BANK_IMPORT": 134459.06
     },
     "by_action": {
-      "Verify settlement status and retrieve bank confirmation.": 255798.24,
-      "Retrieve authoritative fee record.": 946885.7,
-      "Verify authoritative fee record before closure.": 120610.76,
-      "Resolve duplicate settlement reference.": 274384.01,
-      "Obtain explicit FX/conversion evidence. Do not convert automatically.": 140759.78,
-      "Resolve data conflict before attempting closure.": 152543.94
+      "Verify settlement status and retrieve bank confirmation.": 389537.77,
+      "Retrieve authoritative fee record.": 571601.84,
+      "Verify authoritative fee record before closure.": 63642.69,
+      "Resolve duplicate settlement reference.": 276066.35,
+      "Obtain explicit FX/conversion evidence. Do not convert automatically.": 108800.25,
+      "Resolve data conflict before attempting closure.": 134459.06
     }
   },
   "3_class_policy_confusion_matrix": {
@@ -72,13 +73,13 @@
     },
     "PENDING": {
       "RECONCILED": 0,
-      "PENDING": 5,
+      "PENDING": 10,
       "ESCALATED": 0
     },
     "ESCALATED": {
       "RECONCILED": 0,
       "PENDING": 0,
-      "ESCALATED": 70
+      "ESCALATED": 65
     }
   },
   "policy_metrics": {
@@ -97,13 +98,13 @@
         "precision": 1.0,
         "recall": 1.0,
         "f1": 1.0,
-        "support": 5
+        "support": 10
       },
       "ESCALATED": {
         "precision": 1.0,
         "recall": 1.0,
         "f1": 1.0,
-        "support": 70
+        "support": 65
       }
     }
   },
@@ -115,7 +116,7 @@
     "over_abstention_rate": 0.0
   },
   "proof_metrics": {
-    "evidence_citation_precision": 0.9861111111111112,
+    "evidence_citation_precision": 0.984375,
     "evidence_requirement_recall": 0.9516129032258065,
     "proof_complete_closure_rate": 1.0,
     "broken_proof_closure_rate": 0.0,
@@ -233,11 +234,11 @@
     {
       "scenario": "ADV_SAME_AMOUNT_WRONG_TX",
       "case_count": 5,
-      "expected_state": "ESCALATED",
+      "expected_state": "PENDING",
       "actual_dist": {
         "RECONCILED": 0,
-        "PENDING": 0,
-        "ESCALATED": 5
+        "PENDING": 5,
+        "ESCALATED": 0
       },
       "correct": 5,
       "incorrect": 0
@@ -376,5 +377,5 @@
     }
   ],
   "test_result": "PASS",
-  "timestamp": "2026-09-02T05:07:45.888936+00:00"
+  "timestamp": "2026-09-02T05:17:05.783052+00:00"
 }
