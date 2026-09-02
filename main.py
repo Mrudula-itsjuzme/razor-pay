@@ -195,9 +195,10 @@ def evaluate_system(max_layer: int, eval_cases: list, graph_instance=None):
     proof_complete_closures = 0
     right_answer_wrong_proof = 0
     
-    total_valid_cited = 0
     total_cited = 0
+    total_valid_cited = 0
     total_required = 0
+    total_valid_types = 0
     
     # Breakdowns
     scenario_breakdown = {}
@@ -253,6 +254,7 @@ def evaluate_system(max_layer: int, eval_cases: list, graph_instance=None):
         total_valid_cited += valid_cited_for_case
         total_cited += len(cited)
         total_required += len(required)
+        total_valid_types += len(valid_types_found)
         
         has_invalid_proof = (len(cited) > valid_cited_for_case) or (len(valid_types_found) < len(required))
         
@@ -311,13 +313,13 @@ def evaluate_system(max_layer: int, eval_cases: list, graph_instance=None):
     exc_f1 = 2 * (exc_precision * exc_recall) / (exc_precision + exc_recall) if (exc_precision is not None and exc_recall is not None and exc_precision + exc_recall > 0) else None
     
     if max_layer >= 4:
-        proof_precision = total_valid_cited / total_cited if total_cited > 0 else None
-        proof_recall = len(eval_cases) / total_required if total_required > 0 else None
-        proof_f1 = 2 * (proof_precision * proof_recall) / (proof_precision + proof_recall) if (proof_precision is not None and proof_recall is not None and proof_precision + proof_recall > 0) else None
+        evidence_retrieval_precision = total_valid_cited / total_cited if total_cited > 0 else None
+        evidence_retrieval_recall = total_valid_types / total_required if total_required > 0 else None
+        evidence_retrieval_f1 = 2 * (evidence_retrieval_precision * evidence_retrieval_recall) / (evidence_retrieval_precision + evidence_retrieval_recall) if (evidence_retrieval_precision is not None and evidence_retrieval_recall is not None and evidence_retrieval_precision + evidence_retrieval_recall > 0) else None
     else:
-        proof_precision = None
-        proof_recall = None
-        proof_f1 = None
+        evidence_retrieval_precision = None
+        evidence_retrieval_recall = None
+        evidence_retrieval_f1 = None
     
     auto_match_rate = (tp + fp) / total if total > 0 else None
     gt_abstention_req = tn + fp
@@ -350,9 +352,9 @@ def evaluate_system(max_layer: int, eval_cases: list, graph_instance=None):
         "exc_precision": exc_precision,
         "exc_recall": exc_recall,
         "exc_f1": exc_f1,
-        "proof_precision": proof_precision,
-        "proof_recall": proof_recall,
-        "proof_f1": proof_f1,
+        "evidence_retrieval_precision": evidence_retrieval_precision,
+        "evidence_retrieval_recall": evidence_retrieval_recall,
+        "evidence_retrieval_f1": evidence_retrieval_f1,
         "auto_match_rate": auto_match_rate,
         "false_auto_match_rate": false_auto_match_rate,
         "safe_auto_closure_rate": safe_auto_closure_rate,

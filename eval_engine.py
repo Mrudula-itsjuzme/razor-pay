@@ -29,43 +29,55 @@ def get_failure_category(ground_truth: str, decision: str, is_unresolvable: bool
             return "UNNECESSARY_ABSTENTION"
 
 def calculate_proof_debt(engine, cases, graph_instance):
-    total_debt = Decimal('0.00')
-    pending = Decimal('0.00')
-    missing = Decimal('0.00')
-    ambiguous = Decimal('0.00')
-    conflicting = Decimal('0.00')
-    unresolvable = Decimal('0.00')
+    total_unresolved = Decimal('0.00')
+    pending_exposure = Decimal('0.00')
+    actionable_proof_debt = Decimal('0.00')
+    
+    by_cause = {}
+    by_action = {}
+    top_cases = []
     
     for order_id, _ in cases:
         subgraph = graph_instance.get_subgraph_for_order(order_id)
-        res = engine.reconcile_order(subgraph, target_order_id=order_id)
-        decision = res["decision"]
+        res = engine.reconcile_order(subgraph, target_order_id=order_id, max_layer=4)
+        decision = res.get("decision", "")
         exposure = Decimal(res.get("expected_net", "0.00"))
         
-        if decision in ["RECONCILED", "EXCEPTION"]:
+        if decision.startswith("RECONCILED"):
             continue
             
-        total_debt += exposure
-        if decision == "PENDING":
-            pending += exposure
-        elif decision == "ESCALATED":
-            reason = res.get("reason", "")
-            if "conflicting" in reason.lower() or "duplicate" in reason.lower() or "ambiguous" in reason.lower():
-                conflicting += exposure
-            elif "ambiguous" in reason.lower():
-                ambiguous += exposure
-            elif "missing" in reason.lower() or "insufficient" in reason.lower():
-                missing += exposure
-            else:
-                unresolvable += exposure
+        total_unresolved += exposure
+        exc_details = res.get("exception_details", {})
+        exc_type = exc_details.get("exception_type", "UNKNOWN")
+        exc_subtype = exc_details.get("exception_subtype", "UNKNOWN")
+        action = exc_details.get("recommended_action", "Manual human review required.")
+        
+        if exc_type == "PENDING_EVIDENCE":
+            pending_exposure += exposure
+        else:
+            actionable_proof_debt += exposure
+            
+            by_cause[exc_subtype] = by_cause.get(exc_subtype, Decimal('0.00')) + exposure
+            by_action[action] = by_action.get(action, Decimal('0.00')) + exposure
+            
+            top_cases.append({
+                "case_id": order_id,
+                "exposure": exposure,
+                "subtype": exc_subtype,
+                "action": action
+            })
+            
+    # Sort top cases by exposure descending, take top 5
+    top_cases.sort(key=lambda x: x["exposure"], reverse=True)
+    top_cases_list = [{"case_id": c["case_id"], "exposure": float(c["exposure"]), "subtype": c["subtype"], "action": c["action"]} for c in top_cases[:5]]
                 
     return {
-        "total": float(total_debt),
-        "pending": float(pending),
-        "missing": float(missing),
-        "ambiguous": float(ambiguous),
-        "conflicting": float(conflicting),
-        "unresolvable": float(unresolvable)
+        "total_unresolved_exposure": float(total_unresolved),
+        "pending_exposure": float(pending_exposure),
+        "actionable_proof_debt": float(actionable_proof_debt),
+        "by_cause": {k: float(v) for k, v in by_cause.items()},
+        "by_action": {k: float(v) for k, v in by_action.items()},
+        "top_cases": top_cases_list
     }
 
 def safe_automation_frontier(engine, cases, graph_instance):

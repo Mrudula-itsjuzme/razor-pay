@@ -51,14 +51,14 @@
       "proof_complete_closure_rate": 1.0,
       "right_answer_wrong_proof_rate": 0.0,
       "evidence_path_coverage": null,
-      "throughput_cases_per_sec": 403.35423671221935,
-      "p95_latency_ms": 3.7188155310494553,
+      "throughput_cases_per_sec": 542.5533157328688,
+      "p95_latency_ms": 2.76470524924142,
       "unresolved_cases": 75,
       "scenario_breakdown": {
         "CLEAN": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 161985.74,
+          "total_exposure": 136620.81,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -66,7 +66,7 @@
         "PARTIAL_REFUND": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 43061.2,
+          "total_exposure": 48988.92,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -74,7 +74,7 @@
         "SPLIT_SETTLEMENT": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 81697.33,
+          "total_exposure": 137975.09,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -82,7 +82,7 @@
         "DELAYED_SETTLEMENT_EXCEPTION": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 142435.27,
+          "total_exposure": 108483.9,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -90,7 +90,7 @@
         "PENDING_BANK_SLA_SAFE": {
           "total": 5,
           "correct": 0,
-          "total_exposure": 119820.88,
+          "total_exposure": 149986.76,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 0.0
@@ -98,7 +98,7 @@
         "MISSING_FEE_EVIDENCE": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 127671.72,
+          "total_exposure": 138882.22,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -106,7 +106,7 @@
         "UNRESOLVABLE": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 107338.58,
+          "total_exposure": 135210.9,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -114,7 +114,7 @@
         "CONSOLIDATED_SETTLEMENT_N_TO_1": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 62915.31,
+          "total_exposure": 113539.7,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -122,7 +122,7 @@
         "CONTRADICTORY_FEE_RECORDS": {
           "total": 5,
           "correct": 0,
-          "total_exposure": 144842.08,
+          "total_exposure": 126897.8,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 0.0
@@ -130,7 +130,7 @@
         "ADV_SAME_AMOUNT_WRONG_TX": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 65074.14,
+          "total_exposure": 138603.88,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -138,7 +138,7 @@
         "ADV_WRONG_PERFECT_FEE": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 116949.47,
+          "total_exposure": 168635.72,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -146,7 +146,7 @@
         "ADV_DUPLICATE_UTR": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 108291.56,
+          "total_exposure": 151636.86,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -154,7 +154,7 @@
         "ADV_DUPLICATE_PAYMENT": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 74465.19,
+          "total_exposure": 134209.16,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -162,7 +162,7 @@
         "ADV_MULTI_CURRENCY_LURE": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 127231.75,
+          "total_exposure": 122786.2,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -170,7 +170,7 @@
         "ADV_TIMESTAMP_LURE": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 143144.15,
+          "total_exposure": 129150.38,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -178,7 +178,7 @@
         "ADV_WRONG_REFUND_PERFECT_DISCREPANCY": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 136323.02,
+          "total_exposure": 93805.67,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -186,7 +186,7 @@
         "ADV_MIXED_PROVENANCE_SPLIT": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 76501.92,
+          "total_exposure": 146912.06,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -194,7 +194,7 @@
         "ADV_DUPLICATE_BANK_IMPORT": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 121348.94,
+          "total_exposure": 146404.35,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -202,7 +202,7 @@
         "ADV_WRONG_TAX_PERFECT_SIGNATURE": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 82150.46,
+          "total_exposure": 45437.7,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -210,7 +210,7 @@
         "ADV_MANY_TO_MANY_COLLISION": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 103666.34,
+          "total_exposure": 89886.41,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -218,7 +218,7 @@
         "ADV_CUSTOMER_COMPONENT_CONTAMINATION": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 134966.8,
+          "total_exposure": 123940.31,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -257,14 +257,14 @@
       "proof_complete_closure_rate": 1.0,
       "right_answer_wrong_proof_rate": 0.0,
       "evidence_path_coverage": null,
-      "throughput_cases_per_sec": 505.7510209143902,
-      "p95_latency_ms": 2.9658862522670204,
+      "throughput_cases_per_sec": 483.5829784804317,
+      "p95_latency_ms": 3.1018461499895364,
       "unresolved_cases": 75,
       "scenario_breakdown": {
         "CLEAN": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 161985.74,
+          "total_exposure": 136620.81,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -272,7 +272,7 @@
         "PARTIAL_REFUND": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 43061.2,
+          "total_exposure": 48988.92,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -280,7 +280,7 @@
         "SPLIT_SETTLEMENT": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 81697.33,
+          "total_exposure": 137975.09,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -288,7 +288,7 @@
         "DELAYED_SETTLEMENT_EXCEPTION": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 142435.27,
+          "total_exposure": 108483.9,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -296,7 +296,7 @@
         "PENDING_BANK_SLA_SAFE": {
           "total": 5,
           "correct": 0,
-          "total_exposure": 119820.88,
+          "total_exposure": 149986.76,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 0.0
@@ -304,7 +304,7 @@
         "MISSING_FEE_EVIDENCE": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 127671.72,
+          "total_exposure": 138882.22,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -312,7 +312,7 @@
         "UNRESOLVABLE": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 107338.58,
+          "total_exposure": 135210.9,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -320,7 +320,7 @@
         "CONSOLIDATED_SETTLEMENT_N_TO_1": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 62915.31,
+          "total_exposure": 113539.7,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -328,7 +328,7 @@
         "CONTRADICTORY_FEE_RECORDS": {
           "total": 5,
           "correct": 0,
-          "total_exposure": 144842.08,
+          "total_exposure": 126897.8,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 0.0
@@ -336,7 +336,7 @@
         "ADV_SAME_AMOUNT_WRONG_TX": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 65074.14,
+          "total_exposure": 138603.88,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -344,7 +344,7 @@
         "ADV_WRONG_PERFECT_FEE": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 116949.47,
+          "total_exposure": 168635.72,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -352,7 +352,7 @@
         "ADV_DUPLICATE_UTR": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 108291.56,
+          "total_exposure": 151636.86,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -360,7 +360,7 @@
         "ADV_DUPLICATE_PAYMENT": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 74465.19,
+          "total_exposure": 134209.16,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -368,7 +368,7 @@
         "ADV_MULTI_CURRENCY_LURE": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 127231.75,
+          "total_exposure": 122786.2,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -376,7 +376,7 @@
         "ADV_TIMESTAMP_LURE": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 143144.15,
+          "total_exposure": 129150.38,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -384,7 +384,7 @@
         "ADV_WRONG_REFUND_PERFECT_DISCREPANCY": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 136323.02,
+          "total_exposure": 93805.67,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -392,7 +392,7 @@
         "ADV_MIXED_PROVENANCE_SPLIT": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 76501.92,
+          "total_exposure": 146912.06,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -400,7 +400,7 @@
         "ADV_DUPLICATE_BANK_IMPORT": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 121348.94,
+          "total_exposure": 146404.35,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -408,7 +408,7 @@
         "ADV_WRONG_TAX_PERFECT_SIGNATURE": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 82150.46,
+          "total_exposure": 45437.7,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -416,7 +416,7 @@
         "ADV_MANY_TO_MANY_COLLISION": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 103666.34,
+          "total_exposure": 89886.41,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -424,7 +424,7 @@
         "ADV_CUSTOMER_COMPONENT_CONTAMINATION": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 134966.8,
+          "total_exposure": 123940.31,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -463,14 +463,14 @@
       "proof_complete_closure_rate": 1.0,
       "right_answer_wrong_proof_rate": 0.0,
       "evidence_path_coverage": 1.0,
-      "throughput_cases_per_sec": 405.61440090627343,
-      "p95_latency_ms": 3.698093550545829,
+      "throughput_cases_per_sec": 497.8413629308756,
+      "p95_latency_ms": 3.0130079814365933,
       "unresolved_cases": 75,
       "scenario_breakdown": {
         "CLEAN": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 161985.74,
+          "total_exposure": 136620.81,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -478,7 +478,7 @@
         "PARTIAL_REFUND": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 43061.2,
+          "total_exposure": 48988.92,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -486,7 +486,7 @@
         "SPLIT_SETTLEMENT": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 81697.33,
+          "total_exposure": 137975.09,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -494,7 +494,7 @@
         "DELAYED_SETTLEMENT_EXCEPTION": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 142435.27,
+          "total_exposure": 108483.9,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -502,7 +502,7 @@
         "PENDING_BANK_SLA_SAFE": {
           "total": 5,
           "correct": 0,
-          "total_exposure": 119820.88,
+          "total_exposure": 149986.76,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 0.0
@@ -510,7 +510,7 @@
         "MISSING_FEE_EVIDENCE": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 127671.72,
+          "total_exposure": 138882.22,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -518,7 +518,7 @@
         "UNRESOLVABLE": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 107338.58,
+          "total_exposure": 135210.9,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -526,7 +526,7 @@
         "CONSOLIDATED_SETTLEMENT_N_TO_1": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 62915.31,
+          "total_exposure": 113539.7,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -534,7 +534,7 @@
         "CONTRADICTORY_FEE_RECORDS": {
           "total": 5,
           "correct": 0,
-          "total_exposure": 144842.08,
+          "total_exposure": 126897.8,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 0.0
@@ -542,7 +542,7 @@
         "ADV_SAME_AMOUNT_WRONG_TX": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 65074.14,
+          "total_exposure": 138603.88,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -550,7 +550,7 @@
         "ADV_WRONG_PERFECT_FEE": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 116949.47,
+          "total_exposure": 168635.72,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -558,7 +558,7 @@
         "ADV_DUPLICATE_UTR": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 108291.56,
+          "total_exposure": 151636.86,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -566,7 +566,7 @@
         "ADV_DUPLICATE_PAYMENT": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 74465.19,
+          "total_exposure": 134209.16,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -574,7 +574,7 @@
         "ADV_MULTI_CURRENCY_LURE": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 127231.75,
+          "total_exposure": 122786.2,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -582,7 +582,7 @@
         "ADV_TIMESTAMP_LURE": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 143144.15,
+          "total_exposure": 129150.38,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -590,7 +590,7 @@
         "ADV_WRONG_REFUND_PERFECT_DISCREPANCY": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 136323.02,
+          "total_exposure": 93805.67,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -598,7 +598,7 @@
         "ADV_MIXED_PROVENANCE_SPLIT": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 76501.92,
+          "total_exposure": 146912.06,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -606,7 +606,7 @@
         "ADV_DUPLICATE_BANK_IMPORT": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 121348.94,
+          "total_exposure": 146404.35,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -614,7 +614,7 @@
         "ADV_WRONG_TAX_PERFECT_SIGNATURE": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 82150.46,
+          "total_exposure": 45437.7,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -622,7 +622,7 @@
         "ADV_MANY_TO_MANY_COLLISION": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 103666.34,
+          "total_exposure": 89886.41,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -630,7 +630,7 @@
         "ADV_CUSTOMER_COMPONENT_CONTAMINATION": {
           "total": 5,
           "correct": 5,
-          "total_exposure": 134966.8,
+          "total_exposure": 123940.31,
           "unsafe_closures": 0,
           "unsafe_value": 0.0,
           "accuracy": 1.0
@@ -773,15 +773,55 @@
     "N_to_1": "Verified: Exposure tracked by expected_net exactly once per case. Order loop uses unique case order_ids."
   },
   "G": {
-    "total_batch_value": 2281881.85,
-    "proven": 627770.53,
-    "pending": 327330.29,
-    "missing": 969908.78,
-    "ambiguous": 0.0,
-    "conflicting": 0.0,
-    "unresolvable": 0.0,
-    "unclassified": 356872.25,
-    "sum": 2281881.85,
+    "total_batch_value": 2587994.8,
+    "close_books": {
+      "PROVEN": {
+        "count": 30,
+        "exposure": 690215.21,
+        "percentage_of_unresolved": 0.0
+      },
+      "PENDING": {
+        "count": 15,
+        "exposure": 397074.54,
+        "percentage_of_unresolved": 20.923111518972547
+      },
+      "MISSING EVIDENCE": {
+        "count": 35,
+        "exposure": 863093.43,
+        "percentage_of_unresolved": 45.47911857351148
+      },
+      "CONFLICTING EVIDENCE": {
+        "count": 25,
+        "exposure": 637611.62,
+        "percentage_of_unresolved": 33.597769907515975
+      },
+      "AMBIGUOUS PROVENANCE": {
+        "count": 0,
+        "exposure": 0.0,
+        "percentage_of_unresolved": 0.0
+      },
+      "ACCOUNTING MISMATCH": {
+        "count": 0,
+        "exposure": 0.0,
+        "percentage_of_unresolved": 0.0
+      },
+      "TEMPORAL EXCEPTION": {
+        "count": 0,
+        "exposure": 0.0,
+        "percentage_of_unresolved": 0.0
+      },
+      "UNRESOLVABLE": {
+        "count": 0,
+        "exposure": 0.0,
+        "percentage_of_unresolved": 0.0
+      },
+      "UNCLASSIFIED": {
+        "count": 0,
+        "exposure": 0.0,
+        "percentage_of_unresolved": 0.0
+      }
+    },
+    "sum": 2587994.8,
     "difference": 0.0,
     "explanation": "Partition is mathematically exact."
   },

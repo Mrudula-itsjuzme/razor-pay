@@ -113,24 +113,69 @@ class ReconciliationEngine:
             required_evidence.remove("BankTransaction")
             proof_completeness = sum(1 for req in required_evidence if req in found_types) / len(required_evidence)
 
-        # Contradiction Detection
+        # Contradiction Detection - Typed Taxonomy
         conflicting_evidence = []
+        exception_types = []
+        exception_subtypes = []
+        
+        # 1. Bank vs Settlement counts
         if len(bank_txs) > len(settlements) and contract_type != "SPLIT_SETTLEMENT":
              conflicting_evidence.append("More bank transactions than settlements")
+             exception_types.append("CONFLICTING_EVIDENCE")
+             exception_subtypes.append("DUPLICATE_BANK_IMPORT")
         if len(settlements) > len(bank_txs) and len(bank_txs) > 0:
              conflicting_evidence.append("More settlements than bank transactions (Duplicate UTR)")
+             exception_types.append("CONFLICTING_EVIDENCE")
+             exception_subtypes.append("DUPLICATE_SETTLEMENT_REFERENCE")
+             
+        # 2. Accounting Identity Failures
         if total_refund > total_payment:
              conflicting_evidence.append("Refund exceeds payment amount")
-        if len(payments) > len(set(p.payment_id for p in payments)):
+             exception_types.append("ACCOUNTING_MISMATCH")
+             exception_subtypes.append("ACCOUNTING_IDENTITY_FAILURE")
+             
+        # 3. Duplicate Payment Evidence
+        if len(payments) > 1 and len(set(p.order_id for p in payments)) == 1:
              conflicting_evidence.append("Duplicate conflicting payment records found")
-        # Removed len(orders) > 1 conflict to support N:1 settlements
+             exception_types.append("CONFLICTING_EVIDENCE")
+             exception_subtypes.append("DUPLICATE_PAYMENT_EVIDENCE")
+             
+        # 4. Duplicate Fee / Tax Records
+        # Group fees by payment_id and type
+        fee_map = {}
+        for f in fees:
+            key = f"{f.payment_id}_{f.type}"
+            fee_map[key] = fee_map.get(key, 0) + 1
+            if fee_map[key] > 1:
+                conflicting_evidence.append("Duplicate fee records for same payment")
+                exception_types.append("CONFLICTING_EVIDENCE")
+                exception_subtypes.append("DUPLICATE_FEE_RECORDS")
+                break
+                
+        tax_map = {}
+        for t in taxes:
+            key = f"{t.payment_id}_{t.type}"
+            tax_map[key] = tax_map.get(key, 0) + 1
+            if tax_map[key] > 1:
+                conflicting_evidence.append("Duplicate tax records for same payment")
+                exception_types.append("CONFLICTING_EVIDENCE")
+                exception_subtypes.append("DUPLICATE_TAX_RECORDS") # Although TAX_RECORD_MISSING is more expected, this handles duplicate tax
+                break
         
-        # Ambiguity detection: Two bank transactions with the same amount but different references
+        # 5. Mixed Provenance (Multiple customers/unrelated orders incorrectly merged)
+        if len(set(o.customer_id for o in orders)) > 1:
+            conflicting_evidence.append("Mixed provenance detected")
+            exception_types.append("AMBIGUOUS_PROVENANCE")
+            exception_subtypes.append("MIXED_PROVENANCE")
+        
+        # 6. Ambiguity detection
         unique_bank_refs = set(b.reference for b in bank_txs)
         if len(bank_txs) > 1 and len(unique_bank_refs) > 1 and contract_type != "SPLIT_SETTLEMENT":
              conflicting_evidence.append("Ambiguous multiple downstream references found")
+             exception_types.append("AMBIGUOUS_PROVENANCE")
+             exception_subtypes.append("AMBIGUOUS_PROVENANCE")
              
-        # Currency Mismatch
+        # 7. Currency Mismatch
         all_currencies = set()
         if orders: all_currencies.update(o.currency for o in orders)
         if payments: all_currencies.update(p.currency for p in payments)
@@ -141,8 +186,12 @@ class ReconciliationEngine:
         
         if len(all_currencies) > 1:
             conflicting_evidence.append("Currency mismatch across evidence")
+            exception_types.append("CONFLICTING_EVIDENCE")
+            exception_subtypes.append("CURRENCY_MISMATCH")
              
         proof_validity = "PASS" if not conflicting_evidence else "FAIL"
+        audit_trail["exception_types"] = exception_types
+        audit_trail["exception_subtypes"] = exception_subtypes
         
         # Final safety checks
         match_confidence = 0.0
@@ -301,7 +350,68 @@ class ReconciliationEngine:
             "proof_validity": proof_validity
         }
         
-        if final_decision in ["ESCALATED", "HUMAN_REVIEW_REQUIRED", "UNRESOLVED"]:
+        # Build Structured Exception for non-proven cases
+        if not final_decision.startswith("RECONCILED"):
+            exc_type = "UNRESOLVABLE"
+            exc_subtype = "UNKNOWN"
+            severity = "HIGH"
+            rec_action = "Manual human review required."
+            
+            # Map based on conditions
+            if exception_types:
+                # Contradiction detected
+                exc_type = exception_types[0]
+                exc_subtype = exception_subtypes[0]
+                severity = "CRITICAL"
+                if exc_subtype == "DUPLICATE_FEE_RECORDS":
+                    rec_action = "Verify authoritative fee record before closure."
+                elif exc_subtype == "DUPLICATE_SETTLEMENT_REFERENCE":
+                    rec_action = "Resolve duplicate settlement reference."
+                elif exc_subtype == "CURRENCY_MISMATCH":
+                    rec_action = "Obtain explicit FX/conversion evidence. Do not convert automatically."
+                else:
+                    rec_action = "Resolve data conflict before attempting closure."
+            elif final_decision == "PENDING" and not sla_breached:
+                exc_type = "PENDING_EVIDENCE"
+                exc_subtype = "BANK_PENDING_WITHIN_SLA"
+                severity = "LOW"
+                rec_action = "Wait for settlement window. No action required yet."
+            elif final_decision.startswith("EXCEPTION") or (not bank_txs and sla_breached):
+                exc_type = "MISSING_EVIDENCE"
+                exc_subtype = "BANK_MISSING_OUTSIDE_SLA"
+                severity = "HIGH"
+                rec_action = "Verify settlement status and retrieve bank confirmation."
+            elif "Fee" not in found_types:
+                exc_type = "MISSING_EVIDENCE"
+                exc_subtype = "FEE_RECORD_MISSING"
+                severity = "MEDIUM"
+                rec_action = "Retrieve authoritative fee record."
+            elif "Tax" not in found_types:
+                exc_type = "MISSING_EVIDENCE"
+                exc_subtype = "TAX_RECORD_MISSING"
+                severity = "MEDIUM"
+                rec_action = "Retrieve authoritative tax record."
+            elif abs(expected_net - (my_observed_settlement - total_refund)) > self.tolerance:
+                exc_type = "ACCOUNTING_MISMATCH"
+                exc_subtype = "ACCOUNTING_IDENTITY_FAILURE"
+                severity = "HIGH"
+                rec_action = "Investigate unexplained accounting difference."
+                
+            audit_trail["exception_details"] = {
+                "state": final_decision,
+                "exception_type": exc_type,
+                "exception_subtype": exc_subtype,
+                "severity": severity,
+                "financial_exposure": str(expected_net),
+                "affected_evidence_ids": found_ids,
+                "proof_blockers": conflicting_evidence + broken_edges,
+                "recommended_action": rec_action,
+                "closure_authorized": False,
+                "temporal_status": "SLA_BREACHED" if sla_breached else "WITHIN_SLA",
+                "contradiction_status": "CONFLICT_DETECTED" if exception_types else "NO_CONFLICT"
+            }
+            
+        if final_decision in ["ESCALATED", "HUMAN_REVIEW_REQUIRED", "UNRESOLVED"] or final_decision.startswith("EXCEPTION"):
             audit_trail["proof_gap_report"] = {
                 "reason": "Mathematical consistency exists but downstream evidence is missing." if match_confidence > 0.9 else "Accounting mismatch.",
                 "broken_edges": broken_edges,

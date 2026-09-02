@@ -55,41 +55,62 @@ def main():
     # Let's use expected net settlement value as the denominator for exposure.
     # We'll calculate it by iterating through cases, pulling 'expected_net' from the decision.
     
-    proven = Decimal('0.0')
-    pending = Decimal('0.0')
-    missing = Decimal('0.0')
-    ambiguous = Decimal('0.0')
-    conflicting = Decimal('0.0')
-    unresolvable = Decimal('0.0')
-    unclassified = Decimal('0.0')
-    exceptions = 0
+    close_books_buckets = {
+        "PROVEN": {"count": 0, "exposure": Decimal('0.0')},
+        "PENDING": {"count": 0, "exposure": Decimal('0.0')},
+        "MISSING EVIDENCE": {"count": 0, "exposure": Decimal('0.0')},
+        "CONFLICTING EVIDENCE": {"count": 0, "exposure": Decimal('0.0')},
+        "AMBIGUOUS PROVENANCE": {"count": 0, "exposure": Decimal('0.0')},
+        "ACCOUNTING MISMATCH": {"count": 0, "exposure": Decimal('0.0')},
+        "TEMPORAL EXCEPTION": {"count": 0, "exposure": Decimal('0.0')},
+        "UNRESOLVABLE": {"count": 0, "exposure": Decimal('0.0')},
+        "UNCLASSIFIED": {"count": 0, "exposure": Decimal('0.0')}
+    }
+    
+    total_unresolved_exposure = Decimal('0.0')
     
     for order_id, _ in cpx_cases:
         subgraph = cpx_graph.get_subgraph_for_order(order_id)
-        res = engine.reconcile_order(subgraph, target_order_id=order_id)
+        res = engine.reconcile_order(subgraph, target_order_id=order_id, max_layer=4)
         exposure = Decimal(res.get("expected_net", "0.00"))
         
         decision = res.get("decision", "")
         if decision.startswith("RECONCILED") and res.get("proof_completeness", 0) == 1.0:
-            # We assume proof validity passes for these in our engine
-            proven += exposure
-        elif decision == "PENDING":
-            pending += exposure
-        elif decision == "ESCALATED":
-            exceptions += 1
-            reason = res.get("reason", "").lower()
-            if "conflicting" in reason or "duplicate" in reason:
-                conflicting += exposure
-            elif "ambiguous" in reason:
-                ambiguous += exposure
-            elif "missing" in reason or "insufficient" in reason:
-                missing += exposure
-            else:
-                unresolvable += exposure
+            close_books_buckets["PROVEN"]["count"] += 1
+            close_books_buckets["PROVEN"]["exposure"] += exposure
         else:
-            unclassified += exposure
+            total_unresolved_exposure += exposure
+            exc_details = res.get("exception_details", {})
+            exc_type = exc_details.get("exception_type", "")
             
-    total_exposure = sum([proven, pending, missing, ambiguous, conflicting, unresolvable, unclassified])
+            if exc_type == "PENDING_EVIDENCE":
+                bucket = "PENDING"
+            elif exc_type == "MISSING_EVIDENCE":
+                bucket = "MISSING EVIDENCE"
+            elif exc_type == "CONFLICTING_EVIDENCE":
+                bucket = "CONFLICTING EVIDENCE"
+            elif exc_type == "AMBIGUOUS_PROVENANCE":
+                bucket = "AMBIGUOUS PROVENANCE"
+            elif exc_type == "ACCOUNTING_MISMATCH":
+                bucket = "ACCOUNTING MISMATCH"
+            elif exc_type == "TEMPORAL_EXCEPTION":
+                bucket = "TEMPORAL EXCEPTION"
+            elif exc_type == "UNRESOLVABLE":
+                bucket = "UNRESOLVABLE"
+            else:
+                bucket = "UNCLASSIFIED"
+                
+            close_books_buckets[bucket]["count"] += 1
+            close_books_buckets[bucket]["exposure"] += exposure
+            
+    # Calculate percentages
+    for bucket, data in close_books_buckets.items():
+        if bucket != "PROVEN" and total_unresolved_exposure > 0:
+            data["percentage_of_unresolved"] = float((data["exposure"] / total_unresolved_exposure) * 100)
+        elif bucket != "PROVEN":
+            data["percentage_of_unresolved"] = 0.0
+            
+    total_exposure = sum(b["exposure"] for b in close_books_buckets.values())
     
     # Reproducibility
     print("Checking Reproducibility...")
@@ -142,19 +163,19 @@ def main():
         "D": {
             "exact": {
                 "tp": ex_cpx.get('tp'), "fp": ex_cpx.get('fp'), "tn": ex_cpx.get('tn'), "fn": ex_cpx.get('fn'),
-                "proof_precision": ex_cpx.get('proof_precision'), "proof_recall": ex_cpx.get('proof_recall'), "proof_f1": ex_cpx.get('proof_f1'),
+                "evidence_retrieval_precision": ex_cpx.get('evidence_retrieval_precision'), "evidence_retrieval_recall": ex_cpx.get('evidence_retrieval_recall'), "evidence_retrieval_f1": ex_cpx.get('evidence_retrieval_f1'),
                 "proof_complete_closure_rate": ex_cpx.get('proof_complete_closure_rate'), "right_answer_wrong_proof_rate": ex_cpx.get('right_answer_wrong_proof_rate'),
                 "safe_auto_closure_rate": ex_cpx.get('safe_auto_closure_rate'), "over_abstention_rate": ex_cpx.get('over_abstention_rate')
             },
             "rules": {
                 "tp": ru_cpx.get('tp'), "fp": ru_cpx.get('fp'), "tn": ru_cpx.get('tn'), "fn": ru_cpx.get('fn'),
-                "proof_precision": ru_cpx.get('proof_precision'), "proof_recall": ru_cpx.get('proof_recall'), "proof_f1": ru_cpx.get('proof_f1'),
+                "evidence_retrieval_precision": ru_cpx.get('evidence_retrieval_precision'), "evidence_retrieval_recall": ru_cpx.get('evidence_retrieval_recall'), "evidence_retrieval_f1": ru_cpx.get('evidence_retrieval_f1'),
                 "proof_complete_closure_rate": ru_cpx.get('proof_complete_closure_rate'), "right_answer_wrong_proof_rate": ru_cpx.get('right_answer_wrong_proof_rate'),
                 "safe_auto_closure_rate": ru_cpx.get('safe_auto_closure_rate'), "over_abstention_rate": ru_cpx.get('over_abstention_rate')
             },
             "controller": {
                 "tp": co_cpx.get('tp'), "fp": co_cpx.get('fp'), "tn": co_cpx.get('tn'), "fn": co_cpx.get('fn'),
-                "proof_precision": co_cpx.get('proof_precision'), "proof_recall": co_cpx.get('proof_recall'), "proof_f1": co_cpx.get('proof_f1'),
+                "evidence_retrieval_precision": co_cpx.get('evidence_retrieval_precision'), "evidence_retrieval_recall": co_cpx.get('evidence_retrieval_recall'), "evidence_retrieval_f1": co_cpx.get('evidence_retrieval_f1'),
                 "proof_complete_closure_rate": co_cpx.get('proof_complete_closure_rate'), "right_answer_wrong_proof_rate": co_cpx.get('right_answer_wrong_proof_rate'),
                 "safe_auto_closure_rate": co_cpx.get('safe_auto_closure_rate'), "over_abstention_rate": co_cpx.get('over_abstention_rate')
             }
@@ -165,13 +186,7 @@ def main():
         },
         "G": {
             "total_batch_value": float(total_exposure),
-            "proven": float(proven),
-            "pending": float(pending),
-            "missing": float(missing),
-            "ambiguous": float(ambiguous),
-            "conflicting": float(conflicting),
-            "unresolvable": float(unresolvable),
-            "unclassified": float(unclassified),
+            "close_books": {k: {"count": v["count"], "exposure": float(v["exposure"]), "percentage_of_unresolved": v.get("percentage_of_unresolved", 0.0)} for k, v in close_books_buckets.items()},
             "sum": float(total_exposure),
             "difference": 0.0,
             "explanation": "Partition is mathematically exact."
