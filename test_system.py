@@ -195,3 +195,60 @@ def test_benchmark_capabilities_differ():
     proposed_f1 = metrics["proposed"]["exc_f1"] or 0.0
     
     assert proposed_f1 > exact_f1, "Proposed system must correctly classify exceptions (like missing bank TX) that Exact cannot."
+
+def test_degradation_isolation():
+    client.post("/api/demo")
+    
+    # A. reconcile pristine case (let's use order 1000 which is CLEAN)
+    res_a = client.get("/api/reconcile/1000").json()
+    graph_a = client.get("/api/graph/1000").json()
+    
+    # B. record decision + evidence IDs + canonical graph node count
+    decision_a = res_a["decision"]
+    nodes_a = len(graph_a["nodes"])
+    canonical_nodes_before = len(global_graph.g.nodes)
+    
+    # C. degrade case
+    client.post("/api/degrade/1000")
+    
+    # D. verify degraded copy changes
+    res_c = client.get("/api/reconcile/1000").json()
+    graph_c = client.get("/api/graph/1000").json()
+    assert len(graph_c["nodes"]) < nodes_a, "Degraded graph must have fewer nodes"
+    assert res_c["decision"] != decision_a, "Decision must change on degradation"
+    
+    # E. verify canonical graph unchanged
+    canonical_nodes_after = len(global_graph.g.nodes)
+    assert canonical_nodes_before == canonical_nodes_after, "Canonical graph must not mutate"
+    
+    # F. restore
+    client.post("/api/restore/1000")
+    
+    # G. reconcile again
+    res_g = client.get("/api/reconcile/1000").json()
+    graph_g = client.get("/api/graph/1000").json()
+    
+    # H. assert identical to A
+    assert res_g["decision"] == decision_a
+    assert len(graph_g["nodes"]) == nodes_a
+    assert len(global_graph.g.nodes) == canonical_nodes_before
+    # Sequence test for multiple cases
+    res2_a = client.get("/api/reconcile/3000").json()
+    graph2_a = client.get("/api/graph/3000").json()
+    decision2_a = res2_a["decision"]
+    
+    client.post("/api/degrade/1000")
+    client.post("/api/degrade/3000")
+    
+    res2_c = client.get("/api/reconcile/3000").json()
+    assert res2_c["decision"] != decision2_a
+    
+    # Restoring 1000 should not restore 3000
+    client.post("/api/restore/1000")
+    res2_d = client.get("/api/reconcile/3000").json()
+    assert res2_d["decision"] != decision2_a
+    
+    # Restoring 3000 fixes 3000
+    client.post("/api/restore/3000")
+    res2_e = client.get("/api/reconcile/3000").json()
+    assert res2_e["decision"] == decision2_a

@@ -147,8 +147,11 @@ class ReconciliationEngine:
         if not bank_txs and sla_breached:
             broken_edges.append("Settlement → BankTransaction")
 
-        # Layer 1: Exact
-        audit_trail["layers_run"].append("Layer 1: Exact")
+        # Layer 1: Exact / Layer 2: Composite
+        if len(settlements) > 1:
+            audit_trail["layers_run"].append("Layer 2: Composite (Split Settlement)")
+        else:
+            audit_trail["layers_run"].append("Layer 1: Exact")
         if abs(expected_net - observed_settlement) <= self.tolerance:
             match_confidence = 1.0
             if contract_type == "PENDING_SETTLEMENT":
