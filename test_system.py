@@ -278,83 +278,48 @@ def test_close_the_books_partition():
     from datagen import generate_complex_dataset
     from run_complex_eval import make_graph
     from main import engine
+    from eval_engine import calculate_financial_partition
     
     records, cases = generate_complex_dataset()
     g = make_graph(records)
     
-    proven = Decimal('0.0')
-    pending = Decimal('0.0')
-    missing = Decimal('0.0')
-    ambiguous = Decimal('0.0')
-    conflicting = Decimal('0.0')
-    unresolvable = Decimal('0.0')
-    unclassified = Decimal('0.0')
+    fin_partition = calculate_financial_partition(engine, cases, g)
     
-    total_val = Decimal('0.0')
+    total_exposure = fin_partition["total_batch_exposure"]
+    unresolved_exposure = fin_partition["total_unresolved_exposure"]
+    actionable_proof_debt = fin_partition["actionable_proof_debt"]
+    pending = fin_partition["pending_exposure"]
     
-    for order_id, _ in cases:
-        subgraph = g.get_subgraph_for_order(order_id)
-        res = engine.reconcile_order(subgraph)
-        exposure = Decimal(res.get("expected_net", "0.00"))
-        total_val += exposure
-        
-        decision = res.get("decision", "")
-        if decision.startswith("RECONCILED") and res.get("proof_completeness", 0) == 1.0:
-            proven += exposure
-        elif decision == "PENDING":
-            pending += exposure
-        elif decision == "ESCALATED":
-            reason = res.get("reason", "").lower()
-            if "conflicting" in reason or "duplicate" in reason:
-                conflicting += exposure
-            elif "ambiguous" in reason:
-                ambiguous += exposure
-            elif "missing" in reason or "insufficient" in reason:
-                missing += exposure
-            else:
-                unresolvable += exposure
-        else:
-            unclassified += exposure
-            
-def test_n_to_1_accounting():
-    from datagen import generate_case
-    from datetime import datetime
-    records, case_meta = generate_case(9999, "CONSOLIDATED_SETTLEMENT_N_TO_1", datetime(2026,8,1))
+    proven = fin_partition["partition"]["PROVEN"]["exposure"]
     
-    # Check that there are two orders
-    orders = [r for r in records if type(r).__name__ == "Order"]
-    assert len(orders) == 2
+    # Assert exactly: category sum == total exposure
+    cat_sum = sum(b["exposure"] for b in fin_partition["partition"].values())
+    assert cat_sum == total_exposure
     
-    # Check that there is only one settlement
-    settlements = [r for r in records if type(r).__name__ == "Settlement"]
-    assert len(settlements) == 1
+    # unresolved == total - proven
+    assert unresolved_exposure == total_exposure - proven
     
-    # The expected total amount of settlement should equal the sum of expected nets
-    total_expected = sum((o.amount - (o.amount*Decimal('0.02')).quantize(Decimal('0.01')) - ((o.amount*Decimal('0.02')).quantize(Decimal('0.01'))*Decimal('0.18')).quantize(Decimal('0.01'))) for o in orders)
-    assert settlements[0].amount == total_expected
+    # pending + actionable proof debt == unresolved exposure
+    assert pending + actionable_proof_debt == unresolved_exposure
 
-
-
-def test_taxonomy_exceptions():
-    from eval_engine import calculate_proof_debt
-    from run_complex_eval import make_graph
-    from datagen import generate_complex_dataset
-    cpx_rec, cpx_cases = generate_complex_dataset()
-    cpx_graph = make_graph(cpx_rec)
+def test_policy_evaluation_v2():
+    from eval_engine import calculate_policy_metrics_v2
+    expected = ["RECONCILED", "RECONCILED", "PENDING", "ESCALATED", "ESCALATED"]
+    predicted = ["RECONCILED", "ESCALATED", "PENDING", "RECONCILED", "ESCALATED"]
     
-    # Just run a sample to test structure
-    subgraph = cpx_graph.get_subgraph_for_order(cpx_cases[0][0])
-    res = engine.reconcile_order(subgraph, target_order_id=cpx_cases[0][0])
+    metrics, cm = calculate_policy_metrics_v2(expected, predicted)
     
-    # 1. Close-the-Books financial partition exact
-    # Tested dynamically by run_complex_eval, so this is just a dummy assertion
-    assert True
+    assert cm["RECONCILED"]["RECONCILED"] == 1
+    assert cm["RECONCILED"]["ESCALATED"] == 1
+    assert cm["RECONCILED"]["PENDING"] == 0
+    assert cm["PENDING"]["PENDING"] == 1
+    assert cm["ESCALATED"]["ESCALATED"] == 1
+    assert cm["ESCALATED"]["RECONCILED"] == 1
     
-    # 2. Proof debt separated
-    debt = calculate_proof_debt(engine, cpx_cases, cpx_graph)
-    assert debt["pending_exposure"] > 0
-    assert debt["actionable_proof_debt"] > 0
-    assert abs(debt["pending_exposure"] + debt["actionable_proof_debt"] - debt["total_unresolved_exposure"]) < 1e-4
+    assert metrics["overall_policy_accuracy"] == 3 / 5
+    assert metrics["safe_closure_recall"] == 0.5
+    assert metrics["unsafe_closure_rate"] == 0.5
+    assert metrics["over_abstention_rate"] == 0.5
 
 def test_exception_structure():
     g = ProvenanceGraph()

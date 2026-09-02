@@ -1,0 +1,378 @@
+{
+  "dataset_version": "COMPLEX_BENCHMARK_V2",
+  "seed": 4242,
+  "case_count": 105,
+  "record_count": 830,
+  "financial_denominator_definition": "expected net settlement value per order",
+  "total_batch_exposure": 2438672.48,
+  "financial_partition": {
+    "PROVEN": {
+      "count": 30,
+      "exposure": 549065.35
+    },
+    "PENDING_WITHIN_SLA": {
+      "count": 15,
+      "exposure": 394316.2
+    },
+    "MISSING_EVIDENCE": {
+      "count": 35,
+      "exposure": 878612.36
+    },
+    "CONFLICTING_EVIDENCE": {
+      "count": 25,
+      "exposure": 616678.57
+    },
+    "AMBIGUOUS_PROVENANCE": {
+      "count": 0,
+      "exposure": 0.0
+    },
+    "ACCOUNTING_MISMATCH": {
+      "count": 0,
+      "exposure": 0.0
+    },
+    "TEMPORAL_EXCEPTION": {
+      "count": 0,
+      "exposure": 0.0
+    },
+    "UNRESOLVABLE": {
+      "count": 0,
+      "exposure": 0.0
+    },
+    "UNCLASSIFIED": {
+      "count": 0,
+      "exposure": 0.0
+    }
+  },
+  "proof_debt": {
+    "total_unresolved_exposure": 1889607.13,
+    "pending_exposure": 394316.2,
+    "actionable_proof_debt": 1495290.93,
+    "by_cause": {
+      "FEE_RECORD_MISSING": 878612.36,
+      "DUPLICATE_FEE_RECORDS": 126157.68,
+      "DUPLICATE_SETTLEMENT_REFERENCE": 196811.96,
+      "CURRENCY_MISMATCH": 141119.09,
+      "DUPLICATE_BANK_IMPORT": 152589.84
+    },
+    "by_action": {
+      "Retrieve authoritative fee record.": 878612.36,
+      "Verify authoritative fee record before closure.": 126157.68,
+      "Resolve duplicate settlement reference.": 196811.96,
+      "Obtain explicit FX/conversion evidence. Do not convert automatically.": 141119.09,
+      "Resolve data conflict before attempting closure.": 152589.84
+    }
+  },
+  "3_class_policy_confusion_matrix": {
+    "RECONCILED": {
+      "RECONCILED": 30,
+      "PENDING": 0,
+      "ESCALATED": 0
+    },
+    "PENDING": {
+      "RECONCILED": 0,
+      "PENDING": 5,
+      "ESCALATED": 0
+    },
+    "ESCALATED": {
+      "RECONCILED": 0,
+      "PENDING": 10,
+      "ESCALATED": 60
+    }
+  },
+  "policy_metrics": {
+    "overall_policy_accuracy": 0.9047619047619048,
+    "macro_precision": 0.7777777777777778,
+    "macro_recall": 0.9523809523809524,
+    "macro_f1": 0.8076923076923076,
+    "per_class": {
+      "RECONCILED": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 30
+      },
+      "PENDING": {
+        "precision": 0.3333333333333333,
+        "recall": 1.0,
+        "f1": 0.5,
+        "support": 5
+      },
+      "ESCALATED": {
+        "precision": 1.0,
+        "recall": 0.8571428571428571,
+        "f1": 0.923076923076923,
+        "support": 70
+      }
+    }
+  },
+  "finance_specific_safety_metrics": {
+    "safe_closure_recall": 1.0,
+    "unsafe_closure_rate": 0.0,
+    "pending_state_accuracy": 1.0,
+    "exception_detection_recall": 0.8571428571428571,
+    "over_abstention_rate": 0.0
+  },
+  "proof_metrics": {
+    "evidence_citation_precision": 0.9861111111111112,
+    "evidence_requirement_recall": 0.9833333333333333,
+    "proof_complete_closure_rate": 1.0,
+    "broken_proof_closure_rate": 0.0,
+    "right_decision_wrong_proof_rate": 0.0
+  },
+  "scenario_level_results": [
+    {
+      "scenario": "CLEAN",
+      "case_count": 5,
+      "expected_state": "RECONCILED",
+      "actual_dist": {
+        "RECONCILED": 5,
+        "PENDING": 0,
+        "ESCALATED": 0
+      },
+      "correct": 5,
+      "incorrect": 0
+    },
+    {
+      "scenario": "PARTIAL_REFUND",
+      "case_count": 5,
+      "expected_state": "RECONCILED",
+      "actual_dist": {
+        "RECONCILED": 5,
+        "PENDING": 0,
+        "ESCALATED": 0
+      },
+      "correct": 5,
+      "incorrect": 0
+    },
+    {
+      "scenario": "SPLIT_SETTLEMENT",
+      "case_count": 5,
+      "expected_state": "RECONCILED",
+      "actual_dist": {
+        "RECONCILED": 5,
+        "PENDING": 0,
+        "ESCALATED": 0
+      },
+      "correct": 5,
+      "incorrect": 0
+    },
+    {
+      "scenario": "DELAYED_SETTLEMENT_EXCEPTION",
+      "case_count": 5,
+      "expected_state": "ESCALATED",
+      "actual_dist": {
+        "RECONCILED": 0,
+        "PENDING": 5,
+        "ESCALATED": 0
+      },
+      "correct": 0,
+      "incorrect": 5
+    },
+    {
+      "scenario": "PENDING_BANK_SLA_SAFE",
+      "case_count": 5,
+      "expected_state": "PENDING",
+      "actual_dist": {
+        "RECONCILED": 0,
+        "PENDING": 5,
+        "ESCALATED": 0
+      },
+      "correct": 5,
+      "incorrect": 0
+    },
+    {
+      "scenario": "MISSING_FEE_EVIDENCE",
+      "case_count": 5,
+      "expected_state": "ESCALATED",
+      "actual_dist": {
+        "RECONCILED": 0,
+        "PENDING": 0,
+        "ESCALATED": 5
+      },
+      "correct": 5,
+      "incorrect": 0
+    },
+    {
+      "scenario": "UNRESOLVABLE",
+      "case_count": 5,
+      "expected_state": "ESCALATED",
+      "actual_dist": {
+        "RECONCILED": 0,
+        "PENDING": 0,
+        "ESCALATED": 5
+      },
+      "correct": 5,
+      "incorrect": 0
+    },
+    {
+      "scenario": "CONSOLIDATED_SETTLEMENT_N_TO_1",
+      "case_count": 5,
+      "expected_state": "RECONCILED",
+      "actual_dist": {
+        "RECONCILED": 5,
+        "PENDING": 0,
+        "ESCALATED": 0
+      },
+      "correct": 5,
+      "incorrect": 0
+    },
+    {
+      "scenario": "CONTRADICTORY_FEE_RECORDS",
+      "case_count": 5,
+      "expected_state": "ESCALATED",
+      "actual_dist": {
+        "RECONCILED": 0,
+        "PENDING": 0,
+        "ESCALATED": 5
+      },
+      "correct": 5,
+      "incorrect": 0
+    },
+    {
+      "scenario": "ADV_SAME_AMOUNT_WRONG_TX",
+      "case_count": 5,
+      "expected_state": "ESCALATED",
+      "actual_dist": {
+        "RECONCILED": 0,
+        "PENDING": 5,
+        "ESCALATED": 0
+      },
+      "correct": 0,
+      "incorrect": 5
+    },
+    {
+      "scenario": "ADV_WRONG_PERFECT_FEE",
+      "case_count": 5,
+      "expected_state": "ESCALATED",
+      "actual_dist": {
+        "RECONCILED": 0,
+        "PENDING": 0,
+        "ESCALATED": 5
+      },
+      "correct": 5,
+      "incorrect": 0
+    },
+    {
+      "scenario": "ADV_DUPLICATE_UTR",
+      "case_count": 5,
+      "expected_state": "ESCALATED",
+      "actual_dist": {
+        "RECONCILED": 0,
+        "PENDING": 0,
+        "ESCALATED": 5
+      },
+      "correct": 5,
+      "incorrect": 0
+    },
+    {
+      "scenario": "ADV_DUPLICATE_PAYMENT",
+      "case_count": 5,
+      "expected_state": "ESCALATED",
+      "actual_dist": {
+        "RECONCILED": 0,
+        "PENDING": 0,
+        "ESCALATED": 5
+      },
+      "correct": 5,
+      "incorrect": 0
+    },
+    {
+      "scenario": "ADV_MULTI_CURRENCY_LURE",
+      "case_count": 5,
+      "expected_state": "ESCALATED",
+      "actual_dist": {
+        "RECONCILED": 0,
+        "PENDING": 0,
+        "ESCALATED": 5
+      },
+      "correct": 5,
+      "incorrect": 0
+    },
+    {
+      "scenario": "ADV_TIMESTAMP_LURE",
+      "case_count": 5,
+      "expected_state": "RECONCILED",
+      "actual_dist": {
+        "RECONCILED": 5,
+        "PENDING": 0,
+        "ESCALATED": 0
+      },
+      "correct": 5,
+      "incorrect": 0
+    },
+    {
+      "scenario": "ADV_WRONG_REFUND_PERFECT_DISCREPANCY",
+      "case_count": 5,
+      "expected_state": "ESCALATED",
+      "actual_dist": {
+        "RECONCILED": 0,
+        "PENDING": 0,
+        "ESCALATED": 5
+      },
+      "correct": 5,
+      "incorrect": 0
+    },
+    {
+      "scenario": "ADV_MIXED_PROVENANCE_SPLIT",
+      "case_count": 5,
+      "expected_state": "ESCALATED",
+      "actual_dist": {
+        "RECONCILED": 0,
+        "PENDING": 0,
+        "ESCALATED": 5
+      },
+      "correct": 5,
+      "incorrect": 0
+    },
+    {
+      "scenario": "ADV_DUPLICATE_BANK_IMPORT",
+      "case_count": 5,
+      "expected_state": "ESCALATED",
+      "actual_dist": {
+        "RECONCILED": 0,
+        "PENDING": 0,
+        "ESCALATED": 5
+      },
+      "correct": 5,
+      "incorrect": 0
+    },
+    {
+      "scenario": "ADV_WRONG_TAX_PERFECT_SIGNATURE",
+      "case_count": 5,
+      "expected_state": "ESCALATED",
+      "actual_dist": {
+        "RECONCILED": 0,
+        "PENDING": 0,
+        "ESCALATED": 5
+      },
+      "correct": 5,
+      "incorrect": 0
+    },
+    {
+      "scenario": "ADV_MANY_TO_MANY_COLLISION",
+      "case_count": 5,
+      "expected_state": "ESCALATED",
+      "actual_dist": {
+        "RECONCILED": 0,
+        "PENDING": 0,
+        "ESCALATED": 5
+      },
+      "correct": 5,
+      "incorrect": 0
+    },
+    {
+      "scenario": "ADV_CUSTOMER_COMPONENT_CONTAMINATION",
+      "case_count": 5,
+      "expected_state": "RECONCILED",
+      "actual_dist": {
+        "RECONCILED": 5,
+        "PENDING": 0,
+        "ESCALATED": 0
+      },
+      "correct": 5,
+      "incorrect": 0
+    }
+  ],
+  "test_result": "PASS",
+  "timestamp": "2026-09-02T04:55:43.923648+00:00"
+}
