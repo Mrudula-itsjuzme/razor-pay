@@ -1,0 +1,591 @@
+{
+  "timestamp": "2026-09-02T09:50:48.688315",
+  "datasets": {
+    "NORMAL_HELD_OUT": {
+      "cases": 7,
+      "records": 56
+    },
+    "ADVERSARIAL": {
+      "cases": 36,
+      "records": 270
+    },
+    "COMPLEX_FINANCE_CLOSE": {
+      "cases": 150,
+      "records": 1144,
+      "value": 3805702.0
+    }
+  },
+  "COMPLEX_FINANCE_CLOSE_BENCHMARK": {
+    "exact": {
+      "precision": 1.0,
+      "recall": 0.5918367346938775,
+      "f1": 0.7435897435897436,
+      "exc_precision": null,
+      "exc_recall": 0.0,
+      "exc_f1": null,
+      "proof_precision": null,
+      "proof_recall": null,
+      "proof_f1": null,
+      "auto_match_rate": 0.19333333333333333,
+      "false_auto_match_rate": 0.0,
+      "unsafe_closure_rate": 0.0,
+      "correct_abstention_rate": 0.8416666666666667,
+      "over_abstention_rate": 0.40816326530612246,
+      "value_weighted_unsafe_closure_rate": 0.0,
+      "proof_complete_closure_rate": 1.0,
+      "right_answer_wrong_proof_rate": 0.0,
+      "evidence_path_coverage": null,
+      "throughput_cases_per_sec": 414.44053594719577,
+      "p95_latency_ms": 3.6193370819091797,
+      "unresolved_cases": 121,
+      "scenario_breakdown": {
+        "CLEAN": {
+          "total": 6,
+          "correct": 6,
+          "total_exposure": 133107.73,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "PENDING_BANK_SLA_SAFE": {
+          "total": 7,
+          "correct": 0,
+          "total_exposure": 176846.54,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 0.0
+        },
+        "UNRESOLVABLE": {
+          "total": 7,
+          "correct": 7,
+          "total_exposure": 123612.25,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "DELAYED_SETTLEMENT_EXCEPTION": {
+          "total": 10,
+          "correct": 10,
+          "total_exposure": 131689.02,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "SPLIT_SETTLEMENT": {
+          "total": 4,
+          "correct": 4,
+          "total_exposure": 120767.01,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "PARTIAL_REFUND": {
+          "total": 13,
+          "correct": 0,
+          "total_exposure": 197585.76,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 0.0
+        },
+        "MISSING_FEE_EVIDENCE": {
+          "total": 3,
+          "correct": 3,
+          "total_exposure": 47083.89,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "ADV_DUPLICATE_UTR": {
+          "total": 5,
+          "correct": 5,
+          "total_exposure": 146261.79,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "ADV_WRONG_PERFECT_FEE": {
+          "total": 8,
+          "correct": 8,
+          "total_exposure": 233743.49,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "ADV_MULTI_CURRENCY_LURE": {
+          "total": 12,
+          "correct": 12,
+          "total_exposure": 318145.3,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "ADV_WRONG_TAX_PERFECT_SIGNATURE": {
+          "total": 9,
+          "correct": 9,
+          "total_exposure": 235957.54,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "ADV_TIMESTAMP_LURE": {
+          "total": 8,
+          "correct": 8,
+          "total_exposure": 167970.09,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "ADV_WRONG_REFUND_PERFECT_DISCREPANCY": {
+          "total": 9,
+          "correct": 9,
+          "total_exposure": 201083.72,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "ADV_SAME_AMOUNT_WRONG_TX": {
+          "total": 4,
+          "correct": 4,
+          "total_exposure": 64841.74,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "ADV_CUSTOMER_COMPONENT_CONTAMINATION": {
+          "total": 11,
+          "correct": 11,
+          "total_exposure": 286021.74,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "ADV_MIXED_PROVENANCE_SPLIT": {
+          "total": 5,
+          "correct": 5,
+          "total_exposure": 520823.4,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "ADV_DUPLICATE_PAYMENT": {
+          "total": 9,
+          "correct": 9,
+          "total_exposure": 305296.72,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "ADV_MANY_TO_MANY_COLLISION": {
+          "total": 12,
+          "correct": 12,
+          "total_exposure": 317069.3,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "ADV_DUPLICATE_BANK_IMPORT": {
+          "total": 8,
+          "correct": 8,
+          "total_exposure": 207319.99,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        }
+      },
+      "failure_taxonomy": {
+        "UNSAFE_CLOSURE": 0,
+        "UNNECESSARY_ABSTENTION": 20,
+        "RETRIEVAL_FAILURE": 0,
+        "CONTRADICTION_FAILURE": 0,
+        "UNSAFE_CLOSURE_WRONG_PROVENANCE": 0,
+        "UNSAFE_CLOSURE_CURRENCY_MISMATCH": 0
+      }
+    },
+    "rules": {
+      "precision": 1.0,
+      "recall": 0.5918367346938775,
+      "f1": 0.7435897435897436,
+      "exc_precision": null,
+      "exc_recall": 0.0,
+      "exc_f1": null,
+      "proof_precision": null,
+      "proof_recall": null,
+      "proof_f1": null,
+      "auto_match_rate": 0.19333333333333333,
+      "false_auto_match_rate": 0.0,
+      "unsafe_closure_rate": 0.0,
+      "correct_abstention_rate": 0.8416666666666667,
+      "over_abstention_rate": 0.40816326530612246,
+      "value_weighted_unsafe_closure_rate": 0.0,
+      "proof_complete_closure_rate": 1.0,
+      "right_answer_wrong_proof_rate": 0.0,
+      "evidence_path_coverage": null,
+      "throughput_cases_per_sec": 512.9107839604507,
+      "p95_latency_ms": 2.924485206604004,
+      "unresolved_cases": 121,
+      "scenario_breakdown": {
+        "CLEAN": {
+          "total": 6,
+          "correct": 6,
+          "total_exposure": 133107.73,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "PENDING_BANK_SLA_SAFE": {
+          "total": 7,
+          "correct": 0,
+          "total_exposure": 176846.54,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 0.0
+        },
+        "UNRESOLVABLE": {
+          "total": 7,
+          "correct": 7,
+          "total_exposure": 123612.25,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "DELAYED_SETTLEMENT_EXCEPTION": {
+          "total": 10,
+          "correct": 10,
+          "total_exposure": 131689.02,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "SPLIT_SETTLEMENT": {
+          "total": 4,
+          "correct": 4,
+          "total_exposure": 120767.01,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "PARTIAL_REFUND": {
+          "total": 13,
+          "correct": 0,
+          "total_exposure": 197585.76,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 0.0
+        },
+        "MISSING_FEE_EVIDENCE": {
+          "total": 3,
+          "correct": 3,
+          "total_exposure": 47083.89,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "ADV_DUPLICATE_UTR": {
+          "total": 5,
+          "correct": 5,
+          "total_exposure": 146261.79,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "ADV_WRONG_PERFECT_FEE": {
+          "total": 8,
+          "correct": 8,
+          "total_exposure": 233743.49,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "ADV_MULTI_CURRENCY_LURE": {
+          "total": 12,
+          "correct": 12,
+          "total_exposure": 318145.3,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "ADV_WRONG_TAX_PERFECT_SIGNATURE": {
+          "total": 9,
+          "correct": 9,
+          "total_exposure": 235957.54,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "ADV_TIMESTAMP_LURE": {
+          "total": 8,
+          "correct": 8,
+          "total_exposure": 167970.09,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "ADV_WRONG_REFUND_PERFECT_DISCREPANCY": {
+          "total": 9,
+          "correct": 9,
+          "total_exposure": 201083.72,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "ADV_SAME_AMOUNT_WRONG_TX": {
+          "total": 4,
+          "correct": 4,
+          "total_exposure": 64841.74,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "ADV_CUSTOMER_COMPONENT_CONTAMINATION": {
+          "total": 11,
+          "correct": 11,
+          "total_exposure": 286021.74,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "ADV_MIXED_PROVENANCE_SPLIT": {
+          "total": 5,
+          "correct": 5,
+          "total_exposure": 520823.4,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "ADV_DUPLICATE_PAYMENT": {
+          "total": 9,
+          "correct": 9,
+          "total_exposure": 305296.72,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "ADV_MANY_TO_MANY_COLLISION": {
+          "total": 12,
+          "correct": 12,
+          "total_exposure": 317069.3,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "ADV_DUPLICATE_BANK_IMPORT": {
+          "total": 8,
+          "correct": 8,
+          "total_exposure": 207319.99,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        }
+      },
+      "failure_taxonomy": {
+        "UNSAFE_CLOSURE": 0,
+        "UNNECESSARY_ABSTENTION": 20,
+        "RETRIEVAL_FAILURE": 0,
+        "CONTRADICTION_FAILURE": 0,
+        "UNSAFE_CLOSURE_WRONG_PROVENANCE": 0,
+        "UNSAFE_CLOSURE_CURRENCY_MISMATCH": 0
+      }
+    },
+    "controller": {
+      "precision": 1.0,
+      "recall": 0.5918367346938775,
+      "f1": 0.7435897435897436,
+      "exc_precision": null,
+      "exc_recall": 0.0,
+      "exc_f1": null,
+      "proof_precision": 0.9911032028469751,
+      "proof_recall": 0.3464203233256351,
+      "proof_f1": 0.5133940229998065,
+      "auto_match_rate": 0.19333333333333333,
+      "false_auto_match_rate": 0.0,
+      "unsafe_closure_rate": 0.0,
+      "correct_abstention_rate": 0.8416666666666667,
+      "over_abstention_rate": 0.40816326530612246,
+      "value_weighted_unsafe_closure_rate": 0.0,
+      "proof_complete_closure_rate": 1.0,
+      "right_answer_wrong_proof_rate": 0.0,
+      "evidence_path_coverage": 1.0,
+      "throughput_cases_per_sec": 453.4003643659341,
+      "p95_latency_ms": 3.308334350585937,
+      "unresolved_cases": 121,
+      "scenario_breakdown": {
+        "CLEAN": {
+          "total": 6,
+          "correct": 6,
+          "total_exposure": 133107.73,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "PENDING_BANK_SLA_SAFE": {
+          "total": 7,
+          "correct": 0,
+          "total_exposure": 176846.54,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 0.0
+        },
+        "UNRESOLVABLE": {
+          "total": 7,
+          "correct": 7,
+          "total_exposure": 123612.25,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "DELAYED_SETTLEMENT_EXCEPTION": {
+          "total": 10,
+          "correct": 10,
+          "total_exposure": 131689.02,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "SPLIT_SETTLEMENT": {
+          "total": 4,
+          "correct": 4,
+          "total_exposure": 120767.01,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "PARTIAL_REFUND": {
+          "total": 13,
+          "correct": 0,
+          "total_exposure": 197585.76,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 0.0
+        },
+        "MISSING_FEE_EVIDENCE": {
+          "total": 3,
+          "correct": 3,
+          "total_exposure": 47083.89,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "ADV_DUPLICATE_UTR": {
+          "total": 5,
+          "correct": 5,
+          "total_exposure": 146261.79,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "ADV_WRONG_PERFECT_FEE": {
+          "total": 8,
+          "correct": 8,
+          "total_exposure": 233743.49,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "ADV_MULTI_CURRENCY_LURE": {
+          "total": 12,
+          "correct": 12,
+          "total_exposure": 318145.3,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "ADV_WRONG_TAX_PERFECT_SIGNATURE": {
+          "total": 9,
+          "correct": 9,
+          "total_exposure": 235957.54,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "ADV_TIMESTAMP_LURE": {
+          "total": 8,
+          "correct": 8,
+          "total_exposure": 167970.09,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "ADV_WRONG_REFUND_PERFECT_DISCREPANCY": {
+          "total": 9,
+          "correct": 9,
+          "total_exposure": 201083.72,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "ADV_SAME_AMOUNT_WRONG_TX": {
+          "total": 4,
+          "correct": 4,
+          "total_exposure": 64841.74,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "ADV_CUSTOMER_COMPONENT_CONTAMINATION": {
+          "total": 11,
+          "correct": 11,
+          "total_exposure": 286021.74,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "ADV_MIXED_PROVENANCE_SPLIT": {
+          "total": 5,
+          "correct": 5,
+          "total_exposure": 520823.4,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "ADV_DUPLICATE_PAYMENT": {
+          "total": 9,
+          "correct": 9,
+          "total_exposure": 305296.72,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "ADV_MANY_TO_MANY_COLLISION": {
+          "total": 12,
+          "correct": 12,
+          "total_exposure": 317069.3,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        },
+        "ADV_DUPLICATE_BANK_IMPORT": {
+          "total": 8,
+          "correct": 8,
+          "total_exposure": 207319.99,
+          "unsafe_closures": 0,
+          "unsafe_value": 0.0,
+          "accuracy": 1.0
+        }
+      },
+      "failure_taxonomy": {
+        "UNSAFE_CLOSURE": 0,
+        "UNNECESSARY_ABSTENTION": 20,
+        "RETRIEVAL_FAILURE": 0,
+        "CONTRADICTION_FAILURE": 0,
+        "UNSAFE_CLOSURE_WRONG_PROVENANCE": 0,
+        "UNSAFE_CLOSURE_CURRENCY_MISMATCH": 0
+      }
+    }
+  },
+  "CLOSE_THE_BOOKS": {
+    "batch_size": 150,
+    "records": 1144,
+    "value": 3805702.0,
+    "proven_value": 578341.5499999998,
+    "proof_debt": {
+      "total": 3227360.45,
+      "pending": 1045104.38,
+      "missing": 2182256.07,
+      "ambiguous": 0.0,
+      "conflicting": 0.0,
+      "unresolvable": 0.0
+    },
+    "exceptions": 75,
+    "automation_rate": 0.19333333333333333
+  }
+}

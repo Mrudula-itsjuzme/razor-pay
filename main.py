@@ -315,10 +315,14 @@ def evaluate_system(max_layer: int, eval_cases: list, graph_instance=None):
         proof_f1 = None
     
     auto_match_rate = (tp + fp) / total if total > 0 else None
-    unsafe_closure_rate = fp / unresolvable_count if unresolvable_count > 0 else None
-    correct_abstention_rate = tn / unresolvable_count if unresolvable_count > 0 else None
+    gt_abstention_req = tn + fp
+    gt_safely_closable = tp + fn
+    
+    safe_auto_closure_rate = tp / gt_safely_closable if gt_safely_closable > 0 else None
+    unsafe_closure_rate = fp / gt_abstention_req if gt_abstention_req > 0 else None
+    correct_abstention_rate = tn / gt_abstention_req if gt_abstention_req > 0 else None
     false_auto_match_rate = fp / (tp + fp) if (tp + fp) > 0 else None
-    over_abstention_rate = fn / (tp + fn) if (tp + fn) > 0 else None
+    over_abstention_rate = fn / gt_safely_closable if gt_safely_closable > 0 else None
     
     val_weighted_unsafe = float(unsafe_closure_value / total_closure_value) if total_closure_value > 0 else None
     proof_complete_closure_rate = proof_complete_closures / (tp + fp) if (tp + fp) > 0 else None
@@ -331,6 +335,10 @@ def evaluate_system(max_layer: int, eval_cases: list, graph_instance=None):
         v["accuracy"] = v["correct"] / v["total"] if v["total"] > 0 else None
     
     return {
+        "tp": tp,
+        "fp": fp,
+        "tn": tn,
+        "fn": fn,
         "precision": precision,
         "recall": recall,
         "f1": f1,
@@ -342,6 +350,7 @@ def evaluate_system(max_layer: int, eval_cases: list, graph_instance=None):
         "proof_f1": proof_f1,
         "auto_match_rate": auto_match_rate,
         "false_auto_match_rate": false_auto_match_rate,
+        "safe_auto_closure_rate": safe_auto_closure_rate,
         "unsafe_closure_rate": unsafe_closure_rate,
         "correct_abstention_rate": correct_abstention_rate,
         "over_abstention_rate": over_abstention_rate,
@@ -506,3 +515,25 @@ def run_batch():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+
+@app.get("/api/close_the_books")
+def close_the_books():
+    import json
+    import os
+    if os.path.exists('final_evaluation.json'):
+        with open('final_evaluation.json', 'r') as f:
+            data = json.load(f)
+            return data.get('CLOSE_THE_BOOKS', {})
+    return {"error": "Run generate_final_eval.py first"}
+
+
+@app.get("/api/benchmark_complex")
+def benchmark_complex():
+    import json
+    import os
+    if os.path.exists('final_evaluation.json'):
+        with open('final_evaluation.json', 'r') as f:
+            data = json.load(f)
+            return data.get('COMPLEX_FINANCE_CLOSE_BENCHMARK', {})
+    return {"error": "Run generate_final_eval.py first"}

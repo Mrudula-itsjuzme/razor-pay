@@ -92,6 +92,37 @@ def generate_case(i: int, scenario: str, base_time: datetime) -> Tuple[List, Dic
         ledger = LedgerEntry(ledger_entry_id=f"led_{i}", bank_transaction_id=bank_tx.bank_transaction_id, account="SETTLEMENT_RECEIVABLE", amount=expected_settlement, type="CREDIT", timestamp=bank_tx.timestamp)
         records.extend([settlement, bank_tx, ledger])
         
+
+    elif scenario == "CONSOLIDATED_SETTLEMENT_N_TO_1":
+        # Two orders, one settlement
+        amount2 = Decimal('500.00')
+        fee_amt2 = (amount2 * Decimal('0.02')).quantize(Decimal('0.01'))
+        tax_amt2 = (fee_amt2 * Decimal('0.18')).quantize(Decimal('0.01'))
+        order2 = Order(order_id=order_id+"_2", customer_id=f"cust_{i%500}", amount=amount2, created_at=base_time, status="COMPLETED")
+        payment2 = Payment(payment_id=f"pay_{i}_2", order_id=order_id+"_2", amount=amount2, captured_at=base_time, status="CAPTURED", method="UPI")
+        fee2 = Fee(fee_id=f"fee_{i}_2", payment_id=payment2.payment_id, type="GATEWAY", amount=fee_amt2, created_at=base_time)
+        tax2 = Tax(tax_id=f"tax_{i}_2", payment_id=payment2.payment_id, type="GST", amount=tax_amt2, created_at=base_time)
+        
+        expected2 = amount2 - fee_amt2 - tax_amt2
+        total_set = expected_settlement + expected2
+        
+        settlement = Settlement(settlement_id=f"set_{i}", amount=total_set, status="COMPLETED", initiated_at=base_time, reference=f"UTR{i}")
+        items.extend([
+            SettlementItem(item_id=f"si_{i}_1", settlement_id=settlement.settlement_id, payment_id=payment.payment_id, amount=expected_settlement),
+            SettlementItem(item_id=f"si_{i}_2", settlement_id=settlement.settlement_id, payment_id=payment2.payment_id, amount=expected2)
+        ])
+        bank_tx = BankTransaction(bank_transaction_id=f"btx_{i}", amount=total_set, timestamp=base_time, reference=settlement.reference, direction="CREDIT")
+        records.extend([order2, payment2, fee2, tax2, settlement, bank_tx])
+        
+    elif scenario == "CONTRADICTORY_FEE_RECORDS":
+        # Two different fee records for the same payment
+        fee2 = Fee(fee_id=f"fee_dup_{i}", payment_id=payment.payment_id, type="GATEWAY", amount=Decimal('99.99'), created_at=base_time)
+        records.append(fee2)
+        settlement = Settlement(settlement_id=f"set_{i}", amount=expected_settlement, status="COMPLETED", initiated_at=base_time, reference=f"UTR{i}")
+        items.append(SettlementItem(item_id=f"si_{i}_1", settlement_id=settlement.settlement_id, payment_id=payment.payment_id, amount=expected_settlement))
+        bank_tx = BankTransaction(bank_transaction_id=f"btx_{i}", amount=expected_settlement, timestamp=base_time, reference=settlement.reference, direction="CREDIT")
+        records.extend([settlement, bank_tx])
+
     else: # UNRESOLVABLE
         wrong_amount = (expected_settlement - Decimal('145.22')).quantize(Decimal('0.01'))
         if wrong_amount < 0: wrong_amount = Decimal('100.00')
@@ -315,3 +346,46 @@ def generate_adversarial_dataset() -> Tuple[List, List]:
         cases.append((c["order_id"], c["ground_truth"]))
         
     return records, cases
+
+def generate_complex_dataset() -> Tuple[List, List[Tuple[str, str]]]:
+    scenarios_normal = [
+        "CLEAN", "PARTIAL_REFUND", "SPLIT_SETTLEMENT", 
+        "DELAYED_SETTLEMENT_EXCEPTION", "PENDING_BANK_SLA_SAFE",
+        "MISSING_FEE_EVIDENCE", "UNRESOLVABLE",
+        "CONSOLIDATED_SETTLEMENT_N_TO_1", "CONTRADICTORY_FEE_RECORDS"
+    ]
+    
+    scenarios_adv = [
+        "ADV_SAME_AMOUNT_WRONG_TX", "ADV_WRONG_PERFECT_FEE", 
+        "ADV_DUPLICATE_UTR", "ADV_DUPLICATE_PAYMENT",
+        "ADV_MULTI_CURRENCY_LURE", "ADV_TIMESTAMP_LURE",
+        "ADV_WRONG_REFUND_PERFECT_DISCREPANCY", "ADV_MIXED_PROVENANCE_SPLIT",
+        "ADV_DUPLICATE_BANK_IMPORT", "ADV_WRONG_TAX_PERFECT_SIGNATURE",
+        "ADV_MANY_TO_MANY_COLLISION", "ADV_CUSTOMER_COMPONENT_CONTAMINATION"
+    ]
+
+    all_records = []
+    all_cases = []
+    
+    import random
+    local_rng = random.Random(4242)
+    base_time = datetime(2026, 8, 14, 12, 0, 0)
+    
+    # 5 cases per normal scenario (7 * 5 = 35)
+    i = 30000
+    for scenario in scenarios_normal:
+        for _ in range(5):
+            records, case_meta = generate_case(i, scenario, base_time)
+            all_records.extend(records)
+            all_cases.append((case_meta["order_id"], case_meta["ground_truth"]))
+            i += 1
+            
+    # 5 cases per adv/complex scenario (14 * 5 = 70)
+    for scenario in scenarios_adv:
+        for _ in range(5):
+            records, case_meta = generate_adversarial_case(i, scenario, base_time)
+            all_records.extend(records)
+            all_cases.append((case_meta["order_id"], case_meta["ground_truth"]))
+            i += 1
+            
+    return all_records, all_cases

@@ -325,14 +325,36 @@
                 <div>
                     <h1 style="font-size: 1.5rem; margin-bottom: 10px;">Exception Command Center</h1>
                     <p style="color: var(--text-muted); font-size: 0.9rem;">
-                        Human review queue for cases where missing evidence or contradictions block automated closure.
+                        Human review queue and month-end close operations.
                     </p>
                 </div>
-                <button class="action-btn" style="background:var(--accent-green); border:none; padding: 10px 20px; color:white; cursor:pointer; border-radius:6px; font-weight:bold;" onclick="runBatch()">SCAN PORTFOLIO FOR EXCEPTIONS</button>
+                <button class="action-btn" style="background:var(--accent-green); border:none; padding: 10px 20px; color:white; cursor:pointer; border-radius:6px; font-weight:bold;" onclick="runBatch()">RUN CLOSE</button>
             </div>
-            <div id="batchResults">
-                <div style="color:var(--text-muted);">Ready to scan portfolio.</div>
+            
+            <div id="batchResults" style="display:none;">
+                <div class="info-panel" style="margin-bottom:20px;">
+                    <h3>MONTH-END CLOSE SUMMARY</h3>
+                    <div style="display:flex; gap: 20px; flex-wrap: wrap; margin-top: 15px;">
+                        <div class="stat-card"><div class="stat-label">Total Records</div><div class="stat-val" id="close-records">-</div></div>
+                        <div class="stat-card"><div class="stat-label">Total Value</div><div class="stat-val" id="close-value">-</div></div>
+                        <div class="stat-card"><div class="stat-label">PROVEN Value</div><div class="stat-val text-green" id="close-proven">-</div></div>
+                        <div class="stat-card hero"><div class="stat-label">PROOF DEBT</div><div class="stat-val text-red" id="close-debt">-</div></div>
+                        <div class="stat-card"><div class="stat-label">PENDING Value</div><div class="stat-val" style="color:var(--accent-blue);" id="close-pending">-</div></div>
+                        <div class="stat-card"><div class="stat-label">Automation Rate</div><div class="stat-val" id="close-auto">-</div></div>
+                    </div>
+                </div>
+
+                <div style="text-align:center; margin-bottom: 20px;">
+                    <button class="action-btn" style="background:var(--accent-yellow); color:black; border:none; padding: 10px 20px; cursor:pointer; border-radius:6px; font-weight:bold;" onclick="showWhyNotClosed()">WHY ISN'T THE BOOK CLOSED?</button>
+                </div>
+
+                <div id="whyNotClosedPanel" class="info-panel" style="display:none; border: 1px solid var(--accent-red);">
+                    <h3 style="color:var(--accent-red); margin-bottom:15px;">Unresolved Verification Exposure</h3>
+                    <div id="exposureGroups"></div>
+                </div>
             </div>
+            
+            <div id="batchLoading" style="color:var(--text-muted);">Ready to scan portfolio.</div>
         </div>
     </div>
 
@@ -692,55 +714,14 @@
             console.log("Raw JSON:", c);
         }
 
+        let animationTimer = null;
         function renderGraph(graphData, reconData) {
             const container = document.getElementById('network');
+            if(animationTimer) clearTimeout(animationTimer);
             
             const nodes = new vis.DataSet();
-            const edges = new vis.DataSet(graphData.edges.map(e => ({
-                from: e.source, to: e.target, label: e.label,
-                font: {size: 10, color: '#94A3B8'},
-                color: {color: '#334155'}
-            })));
+            const edges = new vis.DataSet();
             
-            graphData.nodes.forEach(n => {
-                let color = '#3B82F6';
-                if(['Settlement', 'BankTransaction', 'LedgerEntry'].includes(n.label)) color = '#10B981';
-                if(['Fee', 'Tax', 'Refund'].includes(n.label)) color = '#F59E0B';
-                
-                nodes.add({
-                    id: n.id,
-                    label: n.label + '\n' + n.id.split('_')[1],
-                    color: { background: color, border: color },
-                    font: { color: 'white', size: 12 },
-                    shape: 'box',
-                    borderRadius: 4
-                });
-            });
-
-            // Add counterfactual ghost node if missing fee but unsupported
-            if(reconData.ai_investigation && reconData.ai_investigation.recommended_action === "HUMAN_REVIEW_REQUIRED" && reconData.decision === "ESCALATED") {
-                if(reconData.ai_investigation.unsupported_hypotheses.some(h => h.includes("fee"))) {
-                    nodes.add({
-                        id: 'ghost_fee',
-                        label: 'Missing Fee\n(Counterfactual)',
-                        color: { background: 'transparent', border: '#EF4444' },
-                        font: { color: '#EF4444' },
-                        shape: 'box',
-                        borderWidth: 2,
-                        borderWidthSelected: 2,
-                        shapeProperties: { borderDashes: [5, 5] }
-                    });
-                    // Try to attach to payment
-                    const paymentId = graphData.nodes.find(n => n.label === 'Payment')?.id;
-                    if(paymentId) {
-                        edges.add({
-                            from: paymentId, to: 'ghost_fee', label: 'Expected',
-                            font: {color: '#EF4444'}, color: '#EF4444', dashes: true
-                        });
-                    }
-                }
-            }
-
             const data = { nodes, edges };
             const options = {
                 layout: { hierarchical: { direction: 'UD', sortMethod: 'directed', levelSeparation: 100 } },
@@ -750,6 +731,62 @@
             
             if(network) network.destroy();
             network = new vis.Network(container, data, options);
+
+            const allEdges = graphData.edges.map(e => ({
+                from: e.source, to: e.target, label: e.label,
+                font: {size: 10, color: '#94A3B8'}, color: {color: '#334155'}
+            }));
+
+            const allNodes = graphData.nodes.map(n => {
+                let color = '#3B82F6';
+                if(['Settlement', 'BankTransaction', 'LedgerEntry'].includes(n.label)) color = '#10B981';
+                if(['Fee', 'Tax', 'Refund'].includes(n.label)) color = '#F59E0B';
+                return {
+                    id: n.id, label: n.label + '\\n' + n.id.split('_')[1],
+                    color: { background: color, border: color },
+                    font: { color: 'white', size: 12 }, shape: 'box', borderRadius: 4,
+                    rawLabel: n.label
+                };
+            });
+
+            const groups = [
+                allNodes.filter(n => ['Customer', 'Order'].includes(n.rawLabel)),
+                allNodes.filter(n => ['Payment'].includes(n.rawLabel)),
+                allNodes.filter(n => ['Fee', 'Tax', 'Refund'].includes(n.rawLabel)),
+                allNodes.filter(n => ['Settlement', 'SettlementItem'].includes(n.rawLabel)),
+                allNodes.filter(n => ['BankTransaction', 'LedgerEntry'].includes(n.rawLabel))
+            ];
+
+            let step = 0;
+            function revealNext() {
+                if(step < groups.length) {
+                    const group = groups[step];
+                    if(group.length > 0) {
+                        nodes.add(group);
+                        const currentIds = nodes.getIds();
+                        const readyEdges = allEdges.filter(e => currentIds.includes(e.from) && currentIds.includes(e.to) && !edges.get(e.id));
+                        edges.add(readyEdges);
+                    }
+                    step++;
+                    animationTimer = setTimeout(revealNext, 400); // short transition
+                } else {
+                    // Finally add ghost node if applicable
+                    if(reconData.ai_investigation && reconData.ai_investigation.recommended_action === "HUMAN_REVIEW_REQUIRED" && reconData.decision === "ESCALATED") {
+                        if(reconData.ai_investigation.unsupported_hypotheses.some(h => h.includes("fee"))) {
+                            nodes.add({
+                                id: 'ghost_fee', label: 'Missing Fee\\n(Counterfactual)',
+                                color: { background: 'transparent', border: '#EF4444' }, font: { color: '#EF4444' },
+                                shape: 'box', borderWidth: 2, borderWidthSelected: 2, shapeProperties: { borderDashes: [5, 5] }
+                            });
+                            const paymentId = graphData.nodes.find(n => n.label === 'Payment')?.id;
+                            if(paymentId) edges.add({
+                                from: paymentId, to: 'ghost_fee', label: 'Expected', font: {color: '#EF4444'}, color: '#EF4444', dashes: true
+                            });
+                        }
+                    }
+                }
+            }
+            revealNext();
         }
 
         async function runBenchmark() {
@@ -811,6 +848,50 @@
                         </table>
                     </div>
                 `;
+                
+                // Fetch Complex Benchmark data dynamically
+                try {
+                    const cpxRes = await fetch(`${API_BASE}/benchmark_complex`);
+                    const cpxData = await cpxRes.json();
+                    
+                    if (!cpxData.error) {
+                        html += `
+                            <div class="bench-card" style="grid-column: 1 / -1; border-color:var(--accent-blue); background:rgba(59, 130, 246, 0.05);">
+                                <h2>COMPLEX FINANCE CLOSE BENCHMARK</h2>
+                                <p style="font-size:0.8rem; color:var(--text-muted);">150 synthetic cases covering 28 realistic operation structures.</p>
+                                <table class="bench-table" style="width:100%; margin-top:10px;">
+                                    <tr>
+                                        <th>Metric</th>
+                                        <th>Exact</th>
+                                        <th>Rules/Fuzzy</th>
+                                        <th>Controller</th>
+                                    </tr>
+                                    <tr>
+                                        <td>Decision F1 Score</td>
+                                        <td>${fmt(cpxData.exact.f1)}</td>
+                                        <td>${fmt(cpxData.rules.f1)}</td>
+                                        <td><strong style="color:var(--accent-blue);">${fmt(cpxData.controller.f1)}</strong></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Safe Auto-closure</td>
+                                        <td>${fmt(cpxData.exact.correct_abstention_rate)}</td>
+                                        <td>${fmt(cpxData.rules.correct_abstention_rate)}</td>
+                                        <td><strong style="color:var(--accent-green);">${fmt(cpxData.controller.correct_abstention_rate)}</strong></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Unsafe Closure Rate</td>
+                                        <td>${fmt(cpxData.exact.unsafe_closure_rate)}</td>
+                                        <td>${fmt(cpxData.rules.unsafe_closure_rate)}</td>
+                                        <td><strong class="${cpxData.controller.unsafe_closure_rate === 0 ? 'text-green' : 'text-red'}">${fmt(cpxData.controller.unsafe_closure_rate)}</strong></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        `;
+                    }
+                } catch (e) {
+                    console.log("Complex benchmark not ready yet.", e);
+                }
+
                 
                 // 4. PROOF DEBT
                 html += `
@@ -891,72 +972,42 @@
                 grid.innerHTML = html;
             }
         }
+        let currentBatchData = null;
         async function runBatch() {
-            const container = document.getElementById('batchResults');
-            container.innerHTML = `<div style="color:var(--text-muted);">Processing batch...</div>`;
+            document.getElementById('batchLoading').style.display = 'block';
+            document.getElementById('batchResults').style.display = 'none';
+            document.getElementById('whyNotClosedPanel').style.display = 'none';
             
-            const res = await fetch(`${API_BASE}/batch`, {method:"POST"});
+            const res = await fetch(`${API_BASE}/close_the_books`);
             const data = await res.json();
+            currentBatchData = data;
             
             const fmt = v => parseFloat(v).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits:2});
-            const s = data.summary;
             
-            let html = `
-                <div class="stats-bar" style="background:transparent; padding:0; border:none; margin-bottom: 20px;">
-                    <div class="stat-card">
-                        <div class="stat-label">Cases Processed</div>
-                        <div class="stat-val">${s.cases_processed}</div>
-                        <div style="font-size:0.75rem; color:var(--text-muted); margin-top:5px;">${parseFloat(s.throughput_cases_sec).toFixed(2)} cases/sec</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Total Financial Value</div>
-                        <div class="stat-val">₹${fmt(s.total_value)}</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-label">Safely Reconciled</div>
-                        <div class="stat-val text-green">${s.reconciled}</div>
-                    </div>
-                    <div class="stat-card" style="border-color:var(--accent-red); background:rgba(239,68,68,0.05);">
-                        <div class="stat-label">Human Review / Exceptions</div>
-                        <div class="stat-val text-red">${s.human_review + s.exceptions}</div>
-                    </div>
-                </div>
+            document.getElementById('close-records').innerText = data.records;
+            document.getElementById('close-value').innerText = `₹${fmt(data.value)}`;
+            document.getElementById('close-proven').innerText = `₹${fmt(data.proven_value)}`;
+            document.getElementById('close-debt').innerText = `₹${fmt(data.proof_debt.total)}`;
+            document.getElementById('close-pending').innerText = `₹${fmt(data.proof_debt.pending)}`;
+            document.getElementById('close-auto').innerText = `${(data.automation_rate * 100).toFixed(1)}%`;
+            
+            document.getElementById('batchLoading').style.display = 'none';
+            document.getElementById('batchResults').style.display = 'block';
+        }
+        
+        function showWhyNotClosed() {
+            if (!currentBatchData) return;
+            const pd = currentBatchData.proof_debt;
+            const fmt = v => parseFloat(v).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits:2});
+            
+            document.getElementById('exposureGroups').innerHTML = `
+                <div style="margin-bottom: 10px;"><strong>Missing Evidence:</strong> ₹${fmt(pd.missing)} (Recommended: Retrieve bank statements / fee evidence)</div>
+                <div style="margin-bottom: 10px;"><strong>Pending Within SLA:</strong> ₹${fmt(pd.pending)} (Recommended: Wait until settlement SLA)</div>
+                <div style="margin-bottom: 10px;"><strong>Contradictory Evidence:</strong> ₹${fmt(pd.conflicting)} (Recommended: Inspect conflicting records)</div>
+                <div style="margin-bottom: 10px;"><strong>Ambiguous Provenance:</strong> ₹${fmt(pd.ambiguous)} (Recommended: Review ambiguous nodes)</div>
+                <div style="margin-bottom: 10px;"><strong>Unresolvable:</strong> ₹${fmt(pd.unresolvable)} (Recommended: System exception workflow)</div>
             `;
-            
-            html += `<h2 style="font-size:1.2rem; margin-top:30px; margin-bottom:15px; display:flex; justify-content:space-between;">
-                        <span>Human Review Inbox (Prioritized by Risk)</span>
-                        <span style="font-size:0.9rem; font-weight:normal; color:var(--text-muted);">Total: ${data.review_queue.length} cases</span>
-                     </h2>`;
-            
-            if (data.review_queue.length === 0) {
-                html += `<div style="padding:20px; text-align:center; color:var(--accent-green); background:rgba(34,197,94,0.1); border-radius:6px;">No cases require human review.</div>`;
-            } else {
-                html += `<table class="bench-table" style="width:100%; background:var(--bg-panel); padding:10px; border-radius:6px;">
-                            <tr>
-                                <th>Case ID</th>
-                                <th>Financial Exposure</th>
-                                <th>Proof Completeness</th>
-                                <th>Reason / Missing Evidence</th>
-                                <th>Recommended Next Action</th>
-                                <th>Action</th>
-                            </tr>`;
-                            
-                data.review_queue.forEach(q => {
-                    const broken = q.broken_edges.length > 0 ? q.broken_edges.join(', ') : 'Accounting mismatch';
-                    html += `<tr>
-                                <td style="text-align:left; color:var(--accent-blue);">ORD_${q.order_id}</td>
-                                <td style="color:#ddd; font-weight:bold;">₹${fmt(q.exposure)}</td>
-                                <td>${(q.completeness * 100).toFixed(0)}%</td>
-                                <td style="color:var(--accent-red); font-size:0.75rem;">${broken}</td>
-                                <td style="color:var(--accent-yellow); font-size:0.75rem;">${q.recommended_action}</td>
-                                <td><button style="background:rgba(59,130,246,0.2); color:var(--accent-blue); border:1px solid var(--accent-blue); padding:5px 10px; border-radius:4px; cursor:pointer;" onclick="switchTab('ops', document.querySelectorAll('.tab')[0]); selectCase(casesData.findIndex(c => c.order_id === '${q.order_id}'));">Investigate</button></td>
-                             </tr>`;
-                });
-                
-                html += `</table>`;
-            }
-            
-            container.innerHTML = html;
+            document.getElementById('whyNotClosedPanel').style.display = 'block';
         }
         async function degradeEvidence() {
             if (currentIndex === -1) return;

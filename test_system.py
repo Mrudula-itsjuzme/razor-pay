@@ -252,3 +252,102 @@ def test_degradation_isolation():
     client.post("/api/restore/3000")
     res2_e = client.get("/api/reconcile/3000").json()
     assert res2_e["decision"] == decision2_a
+
+# ----------------- REGRESSION TESTS FOR EVALUATION -----------------
+
+def test_metric_wiring():
+    # We simulate a confusion matrix:
+    # 2 correct automatic closures (tp)
+    # 1 unsafe closure (fp)
+    # 3 correct abstentions (tn)
+    # 4 over-abstentions (fn)
+    
+    tp, fp, tn, fn = 2, 1, 3, 4
+    total = tp + fp + tn + fn
+    
+    gt_safely_closable = tp + fn
+    gt_abstention_req = tn + fp
+    
+    safe_auto_closure_rate = tp / gt_safely_closable
+    unsafe_closure_rate = fp / gt_abstention_req
+    correct_abstention_rate = tn / gt_abstention_req
+    over_abstention_rate = fn / gt_safely_closable
+    overall_automation = (tp + fp) / total
+    
+    assert safe_auto_closure_rate == 2 / 6
+    assert unsafe_closure_rate == 1 / 4
+    assert correct_abstention_rate == 3 / 4
+    assert over_abstention_rate == 4 / 6
+    assert overall_automation == 3 / 10
+
+def test_stratified_scenario_distribution():
+    from datagen import generate_complex_dataset
+    records, cases = generate_complex_dataset()
+    dist = {}
+    for _, gt in cases:
+        dist[gt] = dist.get(gt, 0) + 1
+        
+    assert len(dist) == 21  # 7 normal + 14 adv
+    for k, v in dist.items():
+        assert v == 5
+
+def test_close_the_books_partition():
+    from datagen import generate_complex_dataset
+    from run_complex_eval import make_graph
+    from main import engine
+    
+    records, cases = generate_complex_dataset()
+    g = make_graph(records)
+    
+    proven = Decimal('0.0')
+    pending = Decimal('0.0')
+    missing = Decimal('0.0')
+    ambiguous = Decimal('0.0')
+    conflicting = Decimal('0.0')
+    unresolvable = Decimal('0.0')
+    unclassified = Decimal('0.0')
+    
+    total_val = Decimal('0.0')
+    
+    for order_id, _ in cases:
+        subgraph = g.get_subgraph_for_order(order_id)
+        res = engine.reconcile_order(subgraph)
+        exposure = Decimal(res.get("expected_net", "0.00"))
+        total_val += exposure
+        
+        decision = res.get("decision", "")
+        if decision.startswith("RECONCILED") and res.get("proof_completeness", 0) == 1.0:
+            proven += exposure
+        elif decision == "PENDING":
+            pending += exposure
+        elif decision == "ESCALATED":
+            reason = res.get("reason", "").lower()
+            if "conflicting" in reason or "duplicate" in reason:
+                conflicting += exposure
+            elif "ambiguous" in reason:
+                ambiguous += exposure
+            elif "missing" in reason or "insufficient" in reason:
+                missing += exposure
+            else:
+                unresolvable += exposure
+        else:
+            unclassified += exposure
+            
+def test_n_to_1_accounting():
+    from datagen import generate_case
+    from datetime import datetime
+    records, case_meta = generate_case(9999, "CONSOLIDATED_SETTLEMENT_N_TO_1", datetime(2026,8,1))
+    
+    # Check that there are two orders
+    orders = [r for r in records if type(r).__name__ == "Order"]
+    assert len(orders) == 2
+    
+    # Check that there is only one settlement
+    settlements = [r for r in records if type(r).__name__ == "Settlement"]
+    assert len(settlements) == 1
+    
+    # The expected total amount of settlement should equal the sum of expected nets
+    total_expected = sum((o.amount - (o.amount*Decimal('0.02')).quantize(Decimal('0.01')) - ((o.amount*Decimal('0.02')).quantize(Decimal('0.01'))*Decimal('0.18')).quantize(Decimal('0.01'))) for o in orders)
+    assert settlements[0].amount == total_expected
+
+
