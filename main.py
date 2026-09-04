@@ -41,13 +41,13 @@ class BenchResult(BaseModel):
     evidence_path_coverage: float
 
 from razorpay_adapter import RazorpayAdapter
-from evaluation.datagen import generate_demo_dataset
+from evaluation.datagen_v2_1 import generate_complex_dataset_v2_1
 
 @app.post("/api/demo")
 def load_demo():
     global global_graph, global_cases
     global_graph = ProvenanceGraph()
-    records, cases = generate_demo_dataset()
+    records, cases, as_of_time = generate_complex_dataset_v2_1()
     global_cases = cases
     
     items = []
