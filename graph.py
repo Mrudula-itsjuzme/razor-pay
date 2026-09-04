@@ -77,27 +77,48 @@ class ProvenanceGraph:
             self.g.add_edge(f"bank_tx_{tx_id}", f"ledger_{ledger_id}", relation="POSTED_AS")
 
     def get_subgraph_for_order(self, order_id: str) -> nx.DiGraph:
-        # Use weak components or traversal to get all connected nodes
         node = f"order_{order_id}"
         if node not in self.g:
             return nx.DiGraph()
-        
-        # We need undirected paths for related records, like Customer -> Order -> Payment -> Refund
-        undirected_g = self._get_undirected().copy()
-        
-        # Avoid cross-order contamination via shared Customer nodes
-        customers = [n for n, d in undirected_g.nodes(data=True) if d.get('type') == 'Customer']
-        undirected_g.remove_nodes_from(customers)
-        
-        if node not in undirected_g:
-            return self.g.subgraph([node]).copy()
             
-        reachable = nx.node_connected_component(undirected_g, node)
+        target_nodes = set([node])
         
-        # Add back the specific customer for this order if needed
-        full_reachable = set(reachable)
-        for c in customers:
-            if self.g.has_edge(c, node):
-                full_reachable.add(c)
-                
-        return self.g.subgraph(full_reachable).copy()
+        # Add Customer (predecessor of Order)
+        for pred in self.g.predecessors(node):
+            target_nodes.add(pred)
+            
+        # Target Payments
+        payments = [s for s in self.g.successors(node) if s.startswith("payment_")]
+        target_nodes.update(payments)
+        
+        # Target Refunds, Fees, Taxes (successors of Payments)
+        for p in payments:
+            for s in self.g.successors(p):
+                if s.startswith("refund_") or s.startswith("fee_") or s.startswith("tax_"):
+                    target_nodes.add(s)
+                    
+        # Target Settlements (successors of Payments and Refunds via INCLUDED_IN)
+        settlements = set()
+        for n in list(target_nodes):
+            for s in self.g.successors(n):
+                if s.startswith("settlement_"):
+                    settlements.add(s)
+                    target_nodes.add(s)
+                    
+        # Target BankTransactions (successors of Settlements)
+        for s in settlements:
+            for btx in self.g.successors(s):
+                if btx.startswith("bank_tx_"):
+                    target_nodes.add(btx)
+                    # Target LedgerEntries
+                    for l in self.g.successors(btx):
+                        if l.startswith("ledger_"):
+                            target_nodes.add(l)
+                            
+        full_nodes = target_nodes
+        
+        subgraph = self.g.subgraph(full_nodes).copy()
+        for n in subgraph.nodes():
+            subgraph.nodes[n]['is_target_evidence'] = True
+            
+        return subgraph

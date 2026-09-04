@@ -29,7 +29,7 @@ class OfflineFallbackInvestigator(BaseInvestigator):
         if diff == Decimal('0.00'):
             supported_hypotheses.append("SLA breached for Bank Transaction. Downstream evidence missing.")
             confidence = 0.99
-            resolution = "EXCEPTION_MISSING_BANK_TX"
+            resolution = "MISSING_BANK_TX_DETECTED"
             broken_edge = "Settlement -> BankTransaction"
         
         # 2. Missing refund
@@ -40,7 +40,7 @@ class OfflineFallbackInvestigator(BaseInvestigator):
                     supported_hypotheses.append(f"Post-capture partial refund of {diff} exists but unlinked")
                     unsupported_hypotheses.pop()
                     confidence = 0.98
-                    resolution = "RECONCILED_WITH_PARTIAL_REFUND"
+                    resolution = "INVESTIGATION_COMPLETE"
                     broken_edge = "Payment -> Refund -> Settlement"
                     break
                     
@@ -52,7 +52,6 @@ class OfflineFallbackInvestigator(BaseInvestigator):
             
             if abs(diff - fee_estimate) <= Decimal('0.5') or abs(diff - (fee_estimate + tax_estimate)) <= Decimal('0.5'):
                 unsupported_hypotheses.append(f"Difference exactly matches standard 2% fee deduction, but NO actual fee record exists in system.")
-                # We intentionally DO NOT set resolution to RECONCILED. It must remain UNRESOLVED because hypothesis != evidence.
                 broken_edge = "Payment -> Fee (Missing Node)"
             else:
                 unsupported_hypotheses.append(f"Missing fee of {diff}")
@@ -63,13 +62,13 @@ class OfflineFallbackInvestigator(BaseInvestigator):
                     if f"Missing fee of {diff}" in unsupported_hypotheses:
                         unsupported_hypotheses.remove(f"Missing fee of {diff}")
                     confidence = 0.95
-                    resolution = "RECONCILED_WITH_FEE"
+                    resolution = "INVESTIGATION_COMPLETE"
                     broken_edge = "Payment -> Fee -> Settlement"
                     break
                     
         if resolution == "UNRESOLVED":
             confidence = 0.1
-            resolution = "HUMAN_REVIEW_REQUIRED"
+            resolution = "MANUAL_REVIEW_REQUIRED"
             
         return {
             "broken_edge": broken_edge,

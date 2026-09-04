@@ -5,12 +5,12 @@
 **Case Count:** 105
 **Record Count:** 835
 **Scenario/Mechanism Count:** 21
-**Total Exposure:** ₹2689785.86
+**Total Exposure:** ₹2383358.52
 
 ## Financial Partition
-- **PROVEN:** ₹579893.71
-- **PENDING:** ₹288922.63
-- **Actionable Proof Debt:** ₹1820969.52
+- **PROVEN:** ₹702367.95
+- **PENDING:** ₹131814.04
+- **Actionable Proof Debt:** ₹1549176.53
 
 ## Three-State Policy Matrix
 ```json
@@ -26,15 +26,15 @@
     "ESCALATED": 0
   },
   "ESCALATED": {
-    "RECONCILED": 0,
+    "RECONCILED": 10,
     "PENDING": 0,
-    "ESCALATED": 65
+    "ESCALATED": 55
   }
 }
 ```
 
 ## Policy Accuracy Metrics (observed on the fixed synthetic V2.1 benchmark)
-- **Observed Unsafe Closure Rate:** 0.0000
+- **Observed Unsafe Closure Rate:** 0.1538
 - **Safe Closure Recall:** 0.8333
 - **Pending-State Accuracy:** 1.0000
-- **Exception Detection Recall:** 1.0000
+- **Exception Detection Recall:** 0.8462

@@ -10,19 +10,37 @@ class ReconciliationEngine:
         self.tolerance = tolerance
         self.settlement_window_days = settlement_window_days
 
+    def authorize_closure(
+        self,
+        accounting_valid: bool,
+        evidence_contract_valid: bool,
+        provenance_valid: bool,
+        temporal_valid: bool,
+        contradiction_valid: bool,
+        currency_valid: bool,
+        proof_complete: bool
+    ) -> bool:
+        """The single authoritative closure gate."""
+        return (
+            accounting_valid and
+            evidence_contract_valid and
+            provenance_valid and
+            temporal_valid and
+            contradiction_valid and
+            currency_valid and
+            proof_complete
+        )
+
     def reconcile_order(self, graph: nx.DiGraph, max_layer: int = 4, target_order_id: Optional[str] = None, as_of_time: Optional[datetime] = None) -> Dict[str, Any]:
         evaluation_time = as_of_time or datetime.now()
-        """
-        Takes an order subgraph and attempts to reconcile it across the layers.
-        Returns the audit trail.
-        """
+        
         nodes_by_type = {}
         for n, data in graph.nodes(data=True):
             t = data.get('type')
             if t and 'data' in data:
-                nodes_by_type.setdefault(t, []).append(data['data'])
+                nodes_by_type.setdefault(t, []).append((n, data['data'], data.get('is_target_evidence', True)))
                 
-        orders = nodes_by_type.get('Order', [])
+        orders = [d for n, d, target in nodes_by_type.get('Order', []) if target]
         if target_order_id:
             orders = [o for o in orders if o.order_id == target_order_id]
             
@@ -31,28 +49,44 @@ class ReconciliationEngine:
         
         order = orders[0]
         
-        # Filter payments, refunds, fees, taxes to ONLY those connected to the target order
-        payments = [p for p in nodes_by_type.get('Payment', []) if p.order_id == order.order_id]
+        # Target Evidence scoped to this order
+        payments = [d for n, d, target in nodes_by_type.get('Payment', []) if target and d.order_id == order.order_id]
         target_payment_ids = set(p.payment_id for p in payments)
-        refunds = [r for r in nodes_by_type.get('Refund', []) if r.payment_id in target_payment_ids]
-        fees = [f for f in nodes_by_type.get('Fee', []) if f.payment_id in target_payment_ids]
-        taxes = [t for t in nodes_by_type.get('Tax', []) if t.payment_id in target_payment_ids]
         
-        settlements = nodes_by_type.get('Settlement', [])
-        bank_txs = nodes_by_type.get('BankTransaction', [])
+        refunds = [d for n, d, target in nodes_by_type.get('Refund', []) if target and d.payment_id in target_payment_ids]
+        fees = [d for n, d, target in nodes_by_type.get('Fee', []) if target and d.payment_id in target_payment_ids]
+        taxes = [d for n, d, target in nodes_by_type.get('Tax', []) if target and d.payment_id in target_payment_ids]
+        
+        target_settlement_ids = set()
+        for u, v, data in graph.edges(data=True):
+            if data.get('relation') == 'INCLUDED_IN':
+                if u.startswith("payment_") and u.replace("payment_", "") in target_payment_ids:
+                    target_settlement_ids.add(v.replace("settlement_", ""))
+                elif u.startswith("refund_") and u.replace("refund_", "") in [r.refund_id for r in refunds]:
+                    target_settlement_ids.add(v.replace("settlement_", ""))
+                    
+        settlements = [d for n, d, target in nodes_by_type.get('Settlement', []) if target and d.settlement_id in target_settlement_ids]
+        
+        target_bank_tx_ids = set()
+        for u, v, data in graph.edges(data=True):
+            if data.get('relation') == 'CREDITED_AS':
+                if u.startswith("settlement_") and u.replace("settlement_", "") in target_settlement_ids:
+                    target_bank_tx_ids.add(v.replace("bank_tx_", ""))
+                    
+        bank_txs = [d for n, d, target in nodes_by_type.get('BankTransaction', []) if target and d.bank_transaction_id in target_bank_tx_ids]
         
         audit_trail = {
             "case_id": f"recon_{order.order_id}",
             "order_id": order.order_id,
             "expected_amount": str(order.amount),
-            "layers_run": [],
+            "layers_run": ["Layer 1: Exact", "Layer 2: Composite", "Layer 4: AI Exception Investigation"],
             "decision": "UNRESOLVED",
             "reason": "",
             "confidence": 0.0,
             "ai_investigation": None
         }
 
-        # Calculate Expected Net from System of Record (Order - Refunds - Fees - Taxes)
+        # Calculate Expected Net from System of Record
         total_payment = sum(p.amount for p in payments if p.status == 'CAPTURED')
         total_refund = sum(r.amount for r in refunds if r.status == 'PROCESSED')
         total_fee = sum(f.amount for f in fees)
@@ -61,151 +95,143 @@ class ReconciliationEngine:
         expected_net = total_payment - total_refund - total_fee - total_tax
         audit_trail["expected_net"] = str(expected_net)
         
-        # Calculate Observed Net from Settlements / Bank TX
-        settlement_edges = []
+        # Calculate Observed Net
+        my_item_total = Decimal('0.00')
+        refund_item_abs_total = Decimal('0.00')
+        
         for u, v, data in graph.edges(data=True):
-            if data.get('relation') == 'INCLUDED_IN':
-                settlement_edges.append(data.get('amount', Decimal('0.00')))
-                
-        observed_settlement = sum(settlement_edges)
-        audit_trail["observed_settlement"] = str(observed_settlement)
-
+            if data.get('relation') == 'INCLUDED_IN' and v.replace("settlement_", "") in target_settlement_ids:
+                amt = data.get('amount', Decimal('0.00'))
+                if u.startswith("payment_") and u.replace("payment_", "") in target_payment_ids:
+                    my_item_total += amt
+                elif u.startswith("refund_") and u.replace("refund_", "") in [r.refund_id for r in refunds]:
+                    my_item_total += amt 
+                    refund_item_abs_total += abs(amt)
+                    
+        unitemized_refunds = total_refund - refund_item_abs_total
+        net_observed = my_item_total - unitemized_refunds
+        audit_trail["observed_settlement"] = str(net_observed)
+        
+        accounting_valid = (abs(expected_net - net_observed) <= self.tolerance)
+        
+        # Temporal & Causal Validation
+        temporal_valid = True
         temporal_exception_subtype = None
         sla_breached = False
         
         for o in orders:
             if o.created_at > evaluation_time:
-                temporal_exception_subtype = "FUTURE_DATED_EVIDENCE"
+                temporal_valid = False; temporal_exception_subtype = "FUTURE_DATED_EVIDENCE"
             for p in payments:
                 if p.captured_at < o.created_at:
-                    temporal_exception_subtype = "CAUSAL_ORDER_VIOLATION"
+                    temporal_valid = False; temporal_exception_subtype = "CAUSAL_ORDER_VIOLATION"
                 for s in settlements:
                     if s.initiated_at < p.captured_at:
-                        temporal_exception_subtype = "CAUSAL_ORDER_VIOLATION"
+                        temporal_valid = False; temporal_exception_subtype = "CAUSAL_ORDER_VIOLATION"
                 for r in refunds:
                     if r.created_at < p.captured_at:
-                        temporal_exception_subtype = "CAUSAL_ORDER_VIOLATION"
-
+                        temporal_valid = False; temporal_exception_subtype = "CAUSAL_ORDER_VIOLATION"
+        
         for s in settlements:
             if s.initiated_at > evaluation_time:
-                temporal_exception_subtype = "FUTURE_DATED_EVIDENCE"
-            for b in bank_txs:
+                temporal_valid = False; temporal_exception_subtype = "FUTURE_DATED_EVIDENCE"
+            s_bank_txs = [b for b in bank_txs if graph.has_edge(f"settlement_{s.settlement_id}", f"bank_tx_{b.bank_transaction_id}")]
+            for b in s_bank_txs:
                 if b.timestamp > evaluation_time:
-                    temporal_exception_subtype = "FUTURE_DATED_EVIDENCE"
-                if b.reference == s.reference and b.timestamp < s.initiated_at:
-                    temporal_exception_subtype = "CAUSAL_ORDER_VIOLATION"
-
+                    temporal_valid = False; temporal_exception_subtype = "FUTURE_DATED_EVIDENCE"
+                if b.timestamp < s.initiated_at:
+                    temporal_valid = False; temporal_exception_subtype = "CAUSAL_ORDER_VIOLATION"
+                    
         latest_settlement = max([s.initiated_at for s in settlements], default=None) if settlements else None
         if latest_settlement:
             delta = (evaluation_time - latest_settlement).total_seconds() / 86400.0
             if delta < 0:
-                temporal_exception_subtype = "FUTURE_DATED_EVIDENCE"
-            elif not bank_txs and delta > self.settlement_window_days and not temporal_exception_subtype:
-                temporal_exception_subtype = "SETTLEMENT_SLA_BREACHED"
-        
-        if temporal_exception_subtype:
-            sla_breached = True
-        
-        # --- EVIDENCE CONTRACT & PROOF GENERATION ---
-        
-        # Determine contract type
+                temporal_valid = False; temporal_exception_subtype = "FUTURE_DATED_EVIDENCE"
+            elif not bank_txs and delta > self.settlement_window_days and temporal_valid:
+                temporal_valid = False; temporal_exception_subtype = "SETTLEMENT_SLA_BREACHED"
+                sla_breached = True
+                
+        # Evidence Contract
         contract_type = "STANDARD_PAYMENT_SETTLEMENT"
         if len(settlements) > 1:
             contract_type = "SPLIT_SETTLEMENT"
         elif refunds:
             contract_type = "PARTIAL_REFUND"
-
-        # Check required evidence
+            
         required_evidence = ["Payment", "Settlement", "BankTransaction"]
         if contract_type == "PARTIAL_REFUND":
             required_evidence.append("Refund")
             
         found_types = set()
         found_ids = []
-        if payments:
-            found_types.add("Payment")
-            found_ids.extend([f"Payment:{p.payment_id}" for p in payments])
-        if settlements:
-            found_types.add("Settlement")
-            found_ids.extend([f"Settlement:{s.settlement_id}" for s in settlements])
-        if bank_txs:
-            found_types.add("BankTransaction")
-            found_ids.extend([f"BankTransaction:{b.bank_transaction_id}" for b in bank_txs])
-        if refunds:
-            found_types.add("Refund")
-            found_ids.extend([f"Refund:{r.refund_id}" for r in refunds])
+        if payments: found_types.add("Payment"); found_ids.extend([f"Payment:{p.payment_id}" for p in payments])
+        if settlements: found_types.add("Settlement"); found_ids.extend([f"Settlement:{s.settlement_id}" for s in settlements])
+        if bank_txs: found_types.add("BankTransaction"); found_ids.extend([f"BankTransaction:{b.bank_transaction_id}" for b in bank_txs])
+        if refunds: found_types.add("Refund"); found_ids.extend([f"Refund:{r.refund_id}" for r in refunds])
         
         proof_completeness = sum(1 for req in required_evidence if req in found_types) / len(required_evidence)
+        proof_complete = (proof_completeness == 1.0)
         
-        # Handle Pending exception (SLA temporal reasoning)
-        if not bank_txs and not sla_breached:
+        if not bank_txs and not sla_breached and temporal_valid:
             contract_type = "PENDING_SETTLEMENT"
             required_evidence.remove("BankTransaction")
             proof_completeness = sum(1 for req in required_evidence if req in found_types) / len(required_evidence)
-
-        # Contradiction Detection - Typed Taxonomy
+            proof_complete = (proof_completeness == 1.0)
+            
+        evidence_contract_valid = proof_complete
+        
+        # Settlement & Bank Validation
+        provenance_valid = True
+        for s in settlements:
+            s_bank_txs = [b for b in bank_txs if graph.has_edge(f"settlement_{s.settlement_id}", f"bank_tx_{b.bank_transaction_id}")]
+            if not s_bank_txs and contract_type != "PENDING_SETTLEMENT":
+                provenance_valid = False
+            
+            b_total = sum(b.amount for b in s_bank_txs)
+            if s_bank_txs and abs(s.amount - b_total) > self.tolerance:
+                provenance_valid = False
+            
+            if s_bank_txs and any(b.reference != s.reference for b in s_bank_txs):
+                provenance_valid = False
+                
+        # Contradictions
+        contradiction_valid = True
         conflicting_evidence = []
         exception_types = []
         exception_subtypes = []
         
-        # 1. Bank vs Settlement counts
         if len(bank_txs) > len(settlements) and contract_type != "SPLIT_SETTLEMENT":
-             conflicting_evidence.append("More bank transactions than settlements")
-             exception_types.append("CONFLICTING_EVIDENCE")
-             exception_subtypes.append("DUPLICATE_BANK_IMPORT")
+            contradiction_valid = False; conflicting_evidence.append("More bank transactions than settlements"); exception_types.append("CONFLICTING_EVIDENCE"); exception_subtypes.append("DUPLICATE_BANK_IMPORT")
         if len(settlements) > len(bank_txs) and len(bank_txs) > 0:
-             conflicting_evidence.append("More settlements than bank transactions (Duplicate UTR)")
-             exception_types.append("CONFLICTING_EVIDENCE")
-             exception_subtypes.append("DUPLICATE_SETTLEMENT_REFERENCE")
-             
-        # 2. Accounting Identity Failures
+            contradiction_valid = False; conflicting_evidence.append("More settlements than bank transactions"); exception_types.append("CONFLICTING_EVIDENCE"); exception_subtypes.append("DUPLICATE_SETTLEMENT_REFERENCE")
         if total_refund > total_payment:
-             conflicting_evidence.append("Refund exceeds payment amount")
-             exception_types.append("ACCOUNTING_MISMATCH")
-             exception_subtypes.append("ACCOUNTING_IDENTITY_FAILURE")
-             
-        # 3. Duplicate Payment Evidence
+            contradiction_valid = False; conflicting_evidence.append("Refund exceeds payment amount"); exception_types.append("ACCOUNTING_MISMATCH"); exception_subtypes.append("ACCOUNTING_IDENTITY_FAILURE")
         if len(payments) > 1 and len(set(p.order_id for p in payments)) == 1:
-             conflicting_evidence.append("Duplicate conflicting payment records found")
-             exception_types.append("CONFLICTING_EVIDENCE")
-             exception_subtypes.append("DUPLICATE_PAYMENT_EVIDENCE")
-             
-        # 4. Duplicate Fee / Tax Records
-        # Group fees by payment_id and type
+            contradiction_valid = False; conflicting_evidence.append("Duplicate payment records"); exception_types.append("CONFLICTING_EVIDENCE"); exception_subtypes.append("DUPLICATE_PAYMENT_EVIDENCE")
+            
         fee_map = {}
         for f in fees:
             key = f"{f.payment_id}_{f.type}"
             fee_map[key] = fee_map.get(key, 0) + 1
             if fee_map[key] > 1:
-                conflicting_evidence.append("Duplicate fee records for same payment")
-                exception_types.append("CONFLICTING_EVIDENCE")
-                exception_subtypes.append("DUPLICATE_FEE_RECORDS")
-                break
-                
+                contradiction_valid = False; conflicting_evidence.append("Duplicate fee records"); exception_types.append("CONFLICTING_EVIDENCE"); exception_subtypes.append("DUPLICATE_FEE_RECORDS"); break
+        
         tax_map = {}
         for t in taxes:
             key = f"{t.payment_id}_{t.type}"
             tax_map[key] = tax_map.get(key, 0) + 1
             if tax_map[key] > 1:
-                conflicting_evidence.append("Duplicate tax records for same payment")
-                exception_types.append("CONFLICTING_EVIDENCE")
-                exception_subtypes.append("DUPLICATE_TAX_RECORDS") # Although TAX_RECORD_MISSING is more expected, this handles duplicate tax
-                break
-        
-        # 5. Mixed Provenance (Multiple customers/unrelated orders incorrectly merged)
+                contradiction_valid = False; conflicting_evidence.append("Duplicate tax records"); exception_types.append("CONFLICTING_EVIDENCE"); exception_subtypes.append("DUPLICATE_TAX_RECORDS"); break
+                
         if len(set(o.customer_id for o in orders)) > 1:
-            conflicting_evidence.append("Mixed provenance detected")
-            exception_types.append("AMBIGUOUS_PROVENANCE")
-            exception_subtypes.append("MIXED_PROVENANCE")
-        
-        # 6. Ambiguity detection
+            contradiction_valid = False; conflicting_evidence.append("Mixed provenance"); exception_types.append("AMBIGUOUS_PROVENANCE"); exception_subtypes.append("MIXED_PROVENANCE")
+            
         unique_bank_refs = set(b.reference for b in bank_txs)
         if len(bank_txs) > 1 and len(unique_bank_refs) > 1 and contract_type != "SPLIT_SETTLEMENT":
-             conflicting_evidence.append("Ambiguous multiple downstream references found")
-             exception_types.append("AMBIGUOUS_PROVENANCE")
-             exception_subtypes.append("AMBIGUOUS_PROVENANCE")
-             
-        # 7. Currency Mismatch
+            contradiction_valid = False; conflicting_evidence.append("Ambiguous downstream references"); exception_types.append("AMBIGUOUS_PROVENANCE"); exception_subtypes.append("AMBIGUOUS_PROVENANCE")
+            
+        # Currency Mismatch
+        currency_valid = True
         all_currencies = set()
         if orders: all_currencies.update(o.currency for o in orders)
         if payments: all_currencies.update(p.currency for p in payments)
@@ -215,158 +241,63 @@ class ReconciliationEngine:
         if fees: all_currencies.update(f.currency for f in fees)
         
         if len(all_currencies) > 1:
-            conflicting_evidence.append("Currency mismatch across evidence")
-            exception_types.append("CONFLICTING_EVIDENCE")
-            exception_subtypes.append("CURRENCY_MISMATCH")
-             
-        proof_validity = "PASS" if not conflicting_evidence else "FAIL"
-        audit_trail["exception_types"] = exception_types
-        audit_trail["exception_subtypes"] = exception_subtypes
+            currency_valid = False; contradiction_valid = False; conflicting_evidence.append("Currency mismatch"); exception_types.append("CONFLICTING_EVIDENCE"); exception_subtypes.append("CURRENCY_MISMATCH")
+            
+        proof_validity = "PASS" if (provenance_valid and temporal_valid and contradiction_valid and currency_valid) else "FAIL"
         
-        # Final safety checks
-        match_confidence = 0.0
-        decision_authority = "NONE"
+        # Centralized Closure Gate
+        closure_authorized = self.authorize_closure(
+            accounting_valid,
+            evidence_contract_valid,
+            provenance_valid,
+            temporal_valid,
+            contradiction_valid,
+            currency_valid,
+            proof_complete
+        )
+        
         final_decision = "UNRESOLVED"
-        broken_edges = []
+        decision_authority = "NONE"
+        match_confidence = 0.0
         
-        if not bank_txs and sla_breached:
-            broken_edges.append("Settlement → BankTransaction")
-
-        # Layer 1: Exact
-        if len(settlements) > 1:
-            audit_trail["layers_run"].append("Layer 2: Composite (Split Settlement)")
-        else:
-            audit_trail["layers_run"].append("Layer 1: Exact")
-            
-        # N:1 accounting check: We must verify that our payment's settlement items sum to our expected net.
-        my_observed_settlement = Decimal('0.00')
-        for u, v, data in graph.edges(data=True):
-            if data.get('relation') == 'INCLUDED_IN':
-                u_id = u.replace("payment_", "").replace("refund_", "")
-                if u_id in target_payment_ids or u.replace("refund_", "") in [r.refund_id for r in refunds]:
-                     # Wait, just check if it's our item
-                     pass
-        
-        # Simpler approach: my_observed_settlement is sum of all settlement edges belonging to our payments/refunds
-        for u, v, data in graph.edges(data=True):
-            if data.get('relation') == 'INCLUDED_IN':
-                if u.startswith("payment_") and u.replace("payment_", "") in target_payment_ids:
-                    my_observed_settlement += data.get('amount', Decimal('0.00'))
-                elif u.startswith("refund_") and u.replace("refund_", "") in [r.refund_id for r in refunds]:
-                    my_observed_settlement -= data.get('amount', Decimal('0.00'))
-                    
-        # For N:1, if the settlement total matches all its items, and our item matches our expected net, it's safe.
-        # We also need to check if bank_tx amount matches the full settlement amount.
-        settlement_valid = True
-        for s in settlements:
-            s_items_total = sum(data.get('amount', Decimal('0.00')) for u, v, data in graph.edges(data=True) if v == f"settlement_{s.settlement_id}")
-            
-            # Allow settlement total to match (items_total - related_refunds)
-            s_payments = [u.replace("payment_", "") for u, v, data in graph.edges(data=True) if v == f"settlement_{s.settlement_id}" and u.startswith("payment_")]
-            s_related_refunds = sum(r.amount for r in refunds if r.payment_id in s_payments and r.status == 'PROCESSED')
-            
-            if abs(s.amount - s_items_total) > self.tolerance and abs(s.amount - (s_items_total - s_related_refunds)) > self.tolerance:
-                settlement_valid = False
-            # Check bank tx
-            b_total = sum(b.amount for b in bank_txs if b.reference == s.reference)
-            if b_total > 0 and abs(s.amount - b_total) > self.tolerance:
-                settlement_valid = False
-
-        if abs(expected_net - (my_observed_settlement - total_refund)) <= self.tolerance and settlement_valid:
+        if closure_authorized:
             match_confidence = 1.0
             if contract_type == "PENDING_SETTLEMENT":
                 final_decision = "PENDING"
                 decision_authority = "TEMPORAL_DETERMINISTIC"
                 audit_trail["reason"] = "Settled but pending bank transaction within SLA."
-            elif proof_completeness == 1.0 and proof_validity == "PASS" and not sla_breached:
+            else:
                 final_decision = "RECONCILED"
                 decision_authority = "DETERMINISTIC"
                 audit_trail["reason"] = "Exact match across full provenance chain."
-            else:
-                final_decision = "ESCALATED"
-                decision_authority = "INSUFFICIENT_EVIDENCE"
-                audit_trail["reason"] = "Insufficient evidence."
                 
-        # Layer 2: Composite (Refunds and splits)
-        if final_decision in ["UNRESOLVED", "ESCALATED"] and max_layer >= 2:
-            audit_trail["layers_run"].append("Layer 2: Composite")
-            
-            # Partial Refund Logic: 
-            # If refund is processed, expected_net is payment - refund - fee - tax.
-            # But the SettlementItem linked to the payment might still be for the full expected amount (payment - fee - tax),
-            # while the Settlement node amount is final (payment - refund - fee - tax).
-            # The AI proves this by verifying: expected_net == (my_observed_settlement - total_refund)
-            # AND the Settlement total matches BankTx total.
-            
-            refund_math_valid = False
-            if contract_type == "PARTIAL_REFUND":
-                if abs(expected_net - (my_observed_settlement - total_refund)) <= self.tolerance and settlement_valid:
-                    # Make sure the bank transaction actually matches the settlement!
-                    if proof_completeness == 1.0 and proof_validity == "PASS" and not sla_breached:
-                        refund_math_valid = True
-                        
-            if refund_math_valid:
-                match_confidence = 1.0
-                final_decision = "RECONCILED"
-                decision_authority = "COMPOSITE_DETERMINISTIC"
-                audit_trail["reason"] = "Reconciled composite refund accounting."
-                
-            # Pending Refunds
-            pending_refunds = sum(r.amount for r in refunds if r.status == 'PENDING')
-            if not sla_breached and pending_refunds > 0 and abs(expected_net - pending_refunds - my_observed_settlement) <= self.tolerance:
-                match_confidence = 1.0
-                final_decision = "PENDING"
-                decision_authority = "COMPOSITE_DETERMINISTIC"
-                audit_trail["reason"] = "Reconciled accounting for pending refunds."
-
-        # Layer 4: AI Exception Investigation
-        if final_decision in ["UNRESOLVED", "ESCALATED"] and max_layer >= 4 and not sla_breached:
-            audit_trail["layers_run"].append("Layer 4: AI Exception Investigation")
-            ai_result = analyze_exception(graph, expected_net, observed_settlement)
+        # Layer 4 AI (Restricted to investigation only)
+        if not closure_authorized and max_layer >= 4 and not sla_breached:
+            ai_result = analyze_exception(graph, expected_net, net_observed)
             audit_trail["ai_investigation"] = ai_result
+            final_decision = "ESCALATED"
+            decision_authority = "HUMAN_REVIEW_REQUIRED"
+            audit_trail["reason"] = "Insufficient evidence. " + (ai_result.get("recommended_action", ""))
             
-            if ai_result.get("recommended_action") != "HUMAN_REVIEW_REQUIRED" and float(ai_result.get("confidence", 0)) > 0.9:
-                ai_decision = ai_result["recommended_action"]
-                match_confidence = float(ai_result["confidence"])
-                if ai_decision.startswith("EXCEPTION"):
-                    final_decision = ai_decision
-                    decision_authority = "AI_DIAGNOSIS"
-                    audit_trail["reason"] = "AI Resolved: " + ", ".join(ai_result["likely_causes"])
-                elif ai_decision.startswith("RECONCILED"):
-                    if proof_validity == "PASS" and proof_completeness == 1.0 and not sla_breached:
-                        if "FEE" in ai_decision and "Fee" not in found_types:
-                            final_decision = "ESCALATED"
-                            decision_authority = "AI_REJECTED_MISSING_FEE_EVIDENCE"
-                        elif "REFUND" in ai_decision and "Refund" not in found_types:
-                            final_decision = "ESCALATED"
-                            decision_authority = "AI_REJECTED_MISSING_REFUND_EVIDENCE"
-                        else:
-                            final_decision = ai_decision
-                            decision_authority = "AI_RECOVERY"
-                        audit_trail["reason"] = "AI Resolved: " + ", ".join(ai_result["likely_causes"])
-                    else:
-                        final_decision = "ESCALATED"
-                        decision_authority = "AI_REJECTED_DUE_TO_INCOMPLETE_PROOF"
-                        audit_trail["reason"] = "Insufficient evidence."
-            else:
-                final_decision = "ESCALATED"
-                decision_authority = "HUMAN_REVIEW_REQUIRED"
-                audit_trail["reason"] = "Insufficient evidence."
-                
+        elif not closure_authorized:
+            final_decision = "ESCALATED"
+            decision_authority = "INSUFFICIENT_EVIDENCE"
+            
         audit_trail["decision"] = final_decision
         audit_trail["decision_authority"] = decision_authority
         audit_trail["proof_completeness"] = proof_completeness
         audit_trail["evidence_contract"] = contract_type
         audit_trail["match_confidence"] = match_confidence
-        audit_trail["broken_edges"] = broken_edges
+        audit_trail["broken_edges"] = []
         audit_trail["conflicting_evidence"] = conflicting_evidence
         audit_trail["proof_validity"] = proof_validity
+        audit_trail["exception_types"] = exception_types
+        audit_trail["exception_subtypes"] = exception_subtypes
         
-        # Build Reconciliation Proof / Proof Gap Report
         audit_trail["proof_certificate"] = {
             "case_id": audit_trail["case_id"],
             "expected_net": str(expected_net),
-            "observed_settlement": str(observed_settlement),
+            "observed_settlement": str(net_observed),
             "evidence_contract": {
                 "type": contract_type,
                 "required": required_evidence,
@@ -374,41 +305,31 @@ class ReconciliationEngine:
                 "cited_evidence": found_ids
             },
             "proof_completeness": proof_completeness,
-            "temporal_checks": "PASS" if not sla_breached else "FAIL",
+            "temporal_checks": "PASS" if temporal_valid else "FAIL",
             "decision": final_decision,
             "decision_authority": decision_authority,
             "proof_validity": proof_validity
         }
         
-        # Build Structured Exception for non-proven cases
-        if not final_decision.startswith("RECONCILED"):
+        if not closure_authorized:
             exc_type = "UNRESOLVABLE"
             exc_subtype = "UNKNOWN"
             severity = "HIGH"
             rec_action = "Manual human review required."
             
-            # Map based on conditions
             if exception_types:
-                # Contradiction detected
                 exc_type = exception_types[0]
                 exc_subtype = exception_subtypes[0]
                 severity = "CRITICAL"
-                if exc_subtype == "DUPLICATE_FEE_RECORDS":
-                    rec_action = "Verify authoritative fee record before closure."
-                elif exc_subtype == "DUPLICATE_SETTLEMENT_REFERENCE":
-                    rec_action = "Resolve duplicate settlement reference."
-                elif exc_subtype == "CURRENCY_MISMATCH":
-                    rec_action = "Obtain explicit FX/conversion evidence. Do not convert automatically."
-                else:
-                    rec_action = "Resolve data conflict before attempting closure."
-            elif final_decision == "PENDING" and not sla_breached:
+                rec_action = "Resolve data conflict before attempting closure."
+            elif contract_type == "PENDING_SETTLEMENT" and temporal_valid:
                 exc_type = "PENDING_EVIDENCE"
                 exc_subtype = "BANK_PENDING_WITHIN_SLA"
                 severity = "LOW"
-                rec_action = "Wait for settlement window. No action required yet."
-            elif sla_breached:
+                rec_action = "Wait for settlement window."
+            elif not temporal_valid and temporal_exception_subtype:
                 exc_type = "TEMPORAL_EXCEPTION"
-                exc_subtype = temporal_exception_subtype if temporal_exception_subtype else "SETTLEMENT_SLA_BREACHED"
+                exc_subtype = temporal_exception_subtype
                 severity = "HIGH"
                 rec_action = "Verify settlement status and retrieve bank confirmation."
             elif "Fee" not in found_types:
@@ -421,11 +342,16 @@ class ReconciliationEngine:
                 exc_subtype = "TAX_RECORD_MISSING"
                 severity = "MEDIUM"
                 rec_action = "Retrieve authoritative tax record."
-            elif abs(expected_net - (my_observed_settlement - total_refund)) > self.tolerance:
+            elif not accounting_valid:
                 exc_type = "ACCOUNTING_MISMATCH"
                 exc_subtype = "ACCOUNTING_IDENTITY_FAILURE"
                 severity = "HIGH"
                 rec_action = "Investigate unexplained accounting difference."
+            elif not provenance_valid:
+                exc_type = "PROVENANCE_FAILURE"
+                exc_subtype = "INVALID_DOWNSTREAM_EVIDENCE"
+                severity = "HIGH"
+                rec_action = "Verify downstream bank references and amounts."
                 
             audit_trail["exception_details"] = {
                 "state": final_decision,
@@ -434,17 +360,16 @@ class ReconciliationEngine:
                 "severity": severity,
                 "financial_exposure": str(expected_net),
                 "affected_evidence_ids": found_ids,
-                "proof_blockers": conflicting_evidence + broken_edges,
+                "proof_blockers": conflicting_evidence,
                 "recommended_action": rec_action,
-                "closure_authorized": False,
+                "closure_authorized": closure_authorized,
                 "temporal_status": "SLA_BREACHED" if sla_breached else "WITHIN_SLA",
                 "contradiction_status": "CONFLICT_DETECTED" if exception_types else "NO_CONFLICT"
             }
             
-        if final_decision in ["ESCALATED", "HUMAN_REVIEW_REQUIRED", "UNRESOLVED"] or final_decision.startswith("EXCEPTION"):
             audit_trail["proof_gap_report"] = {
-                "reason": "Mathematical consistency exists but downstream evidence is missing." if match_confidence > 0.9 else "Accounting mismatch.",
-                "broken_edges": broken_edges,
+                "reason": "Missing or conflicting evidence blocks automated closure.",
+                "broken_edges": [],
                 "conflicting_evidence": conflicting_evidence
             }
             
