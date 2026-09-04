@@ -1,26 +1,26 @@
 {
-  "dataset_version": "COMPLEX_BENCHMARK_V2",
+  "dataset_version": "COMPLEX_BENCHMARK_V2_1",
   "seed": 4242,
   "case_count": 105,
-  "record_count": 830,
+  "record_count": 835,
   "financial_denominator_definition": "expected net settlement value per order",
-  "total_batch_exposure": 2724000.01,
+  "total_batch_exposure": 2689785.86,
   "financial_partition": {
     "PROVEN": {
-      "count": 30,
-      "exposure": 731479.8
+      "count": 25,
+      "exposure": 579893.71
     },
     "PENDING_WITHIN_SLA": {
-      "count": 5,
-      "exposure": 101537.78
+      "count": 10,
+      "exposure": 288922.63
     },
     "MISSING_EVIDENCE": {
       "count": 35,
-      "exposure": 946885.7
+      "exposure": 947693.03
     },
     "CONFLICTING_EVIDENCE": {
       "count": 25,
-      "exposure": 688298.49
+      "exposure": 668609.39
     },
     "AMBIGUOUS_PROVENANCE": {
       "count": 0,
@@ -32,7 +32,7 @@
     },
     "TEMPORAL_EXCEPTION": {
       "count": 10,
-      "exposure": 255798.24
+      "exposure": 204667.1
     },
     "UNRESOLVABLE": {
       "count": 0,
@@ -44,79 +44,80 @@
     }
   },
   "proof_debt": {
-    "total_unresolved_exposure": 1992520.21,
-    "pending_exposure": 101537.78,
-    "actionable_proof_debt": 1890982.43,
+    "total_unresolved_exposure": 2109892.15,
+    "pending_exposure": 288922.63,
+    "actionable_proof_debt": 1820969.52,
     "by_cause": {
-      "SETTLEMENT_SLA_BREACHED": 255798.24,
-      "FEE_RECORD_MISSING": 946885.7,
-      "DUPLICATE_FEE_RECORDS": 120610.76,
-      "DUPLICATE_SETTLEMENT_REFERENCE": 274384.01,
-      "CURRENCY_MISMATCH": 140759.78,
-      "DUPLICATE_BANK_IMPORT": 152543.94
+      "SETTLEMENT_SLA_BREACHED": 111215.86,
+      "FEE_RECORD_MISSING": 947693.03,
+      "DUPLICATE_FEE_RECORDS": 160776.92,
+      "DUPLICATE_SETTLEMENT_REFERENCE": 247906.98,
+      "CURRENCY_MISMATCH": 152391.63,
+      "FUTURE_DATED_EVIDENCE": 93451.24,
+      "DUPLICATE_BANK_IMPORT": 107533.86
     },
     "by_action": {
-      "Verify settlement status and retrieve bank confirmation.": 255798.24,
-      "Retrieve authoritative fee record.": 946885.7,
-      "Verify authoritative fee record before closure.": 120610.76,
-      "Resolve duplicate settlement reference.": 274384.01,
-      "Obtain explicit FX/conversion evidence. Do not convert automatically.": 140759.78,
-      "Resolve data conflict before attempting closure.": 152543.94
+      "Verify settlement status and retrieve bank confirmation.": 204667.1,
+      "Retrieve authoritative fee record.": 947693.03,
+      "Verify authoritative fee record before closure.": 160776.92,
+      "Resolve duplicate settlement reference.": 247906.98,
+      "Obtain explicit FX/conversion evidence. Do not convert automatically.": 152391.63,
+      "Resolve data conflict before attempting closure.": 107533.86
     }
   },
   "3_class_policy_confusion_matrix": {
     "RECONCILED": {
-      "RECONCILED": 30,
+      "RECONCILED": 25,
       "PENDING": 0,
-      "ESCALATED": 0
+      "ESCALATED": 5
     },
     "PENDING": {
       "RECONCILED": 0,
-      "PENDING": 5,
+      "PENDING": 10,
       "ESCALATED": 0
     },
     "ESCALATED": {
       "RECONCILED": 0,
       "PENDING": 0,
-      "ESCALATED": 70
+      "ESCALATED": 65
     }
   },
   "policy_metrics": {
-    "overall_policy_accuracy": 1.0,
-    "macro_precision": 1.0,
-    "macro_recall": 1.0,
-    "macro_f1": 1.0,
+    "overall_policy_accuracy": 0.9523809523809523,
+    "macro_precision": 0.9761904761904763,
+    "macro_recall": 0.9444444444444445,
+    "macro_f1": 0.957351290684624,
     "per_class": {
       "RECONCILED": {
         "precision": 1.0,
-        "recall": 1.0,
-        "f1": 1.0,
+        "recall": 0.8333333333333334,
+        "f1": 0.9090909090909091,
         "support": 30
       },
       "PENDING": {
         "precision": 1.0,
         "recall": 1.0,
         "f1": 1.0,
-        "support": 5
+        "support": 10
       },
       "ESCALATED": {
-        "precision": 1.0,
+        "precision": 0.9285714285714286,
         "recall": 1.0,
-        "f1": 1.0,
-        "support": 70
+        "f1": 0.962962962962963,
+        "support": 65
       }
     }
   },
   "finance_specific_safety_metrics": {
-    "safe_closure_recall": 1.0,
+    "safe_closure_recall": 0.8333333333333334,
     "unsafe_closure_rate": 0.0,
     "pending_state_accuracy": 1.0,
     "exception_detection_recall": 1.0,
-    "over_abstention_rate": 0.0
+    "over_abstention_rate": 0.16666666666666666
   },
   "proof_metrics": {
-    "evidence_citation_precision": 0.9861111111111112,
-    "evidence_requirement_recall": 0.9516129032258065,
+    "evidence_citation_precision": 0.96875,
+    "evidence_requirement_recall": 0.9672131147540983,
     "proof_complete_closure_rate": 1.0,
     "broken_proof_closure_rate": 0.0,
     "right_decision_wrong_proof_rate": 0.0
@@ -233,11 +234,11 @@
     {
       "scenario": "ADV_SAME_AMOUNT_WRONG_TX",
       "case_count": 5,
-      "expected_state": "ESCALATED",
+      "expected_state": "PENDING",
       "actual_dist": {
         "RECONCILED": 0,
-        "PENDING": 0,
-        "ESCALATED": 5
+        "PENDING": 5,
+        "ESCALATED": 0
       },
       "correct": 5,
       "incorrect": 0
@@ -295,12 +296,12 @@
       "case_count": 5,
       "expected_state": "RECONCILED",
       "actual_dist": {
-        "RECONCILED": 5,
+        "RECONCILED": 0,
         "PENDING": 0,
-        "ESCALATED": 0
+        "ESCALATED": 5
       },
-      "correct": 5,
-      "incorrect": 0
+      "correct": 0,
+      "incorrect": 5
     },
     {
       "scenario": "ADV_WRONG_REFUND_PERFECT_DISCREPANCY",
@@ -376,5 +377,5 @@
     }
   ],
   "test_result": "PASS",
-  "timestamp": "2026-09-02T05:07:45.888936+00:00"
+  "timestamp": "2026-09-04T09:27:26.384500+00:00"
 }

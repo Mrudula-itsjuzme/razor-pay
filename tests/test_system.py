@@ -5,7 +5,7 @@ import networkx as nx
 
 from main import app, engine, global_graph
 from datetime import datetime, timedelta
-from datagen import generate_demo_dataset
+from evaluation.datagen import generate_demo_dataset
 from graph import ProvenanceGraph
 from models import Order, Payment, Refund, Fee, Tax, Settlement, BankTransaction, SettlementItem, LedgerEntry
 
@@ -254,7 +254,7 @@ def test_metric_wiring():
     assert overall_automation == 3 / 10
 
 def test_stratified_scenario_distribution():
-    from datagen import generate_complex_dataset
+    from evaluation.datagen import generate_complex_dataset
     records, cases = generate_complex_dataset()
     dist = {}
     for _, gt in cases:
@@ -265,10 +265,10 @@ def test_stratified_scenario_distribution():
         assert v == 5
 
 def test_close_the_books_partition():
-    from datagen import generate_complex_dataset
-    from run_complex_eval import make_graph
+    from evaluation.datagen import generate_complex_dataset
+    from evaluation.run_v2_1 import make_graph
     from main import engine
-    from eval_engine import calculate_financial_partition
+    from evaluation.policy import calculate_financial_partition
     
     records, cases = generate_complex_dataset()
     g = make_graph(records)
@@ -293,7 +293,7 @@ def test_close_the_books_partition():
     assert pending + actionable_proof_debt == unresolved_exposure
 
 def test_policy_evaluation_v2():
-    from eval_engine import calculate_policy_metrics_v2
+    from evaluation.policy import calculate_policy_metrics_v2
     expected = ["RECONCILED", "RECONCILED", "PENDING", "ESCALATED", "ESCALATED"]
     predicted = ["RECONCILED", "ESCALATED", "PENDING", "RECONCILED", "ESCALATED"]
     
@@ -530,3 +530,28 @@ def test_complete_proof_temporal_negative_controls():
     assert res_b["proof_completeness"] == 1.0
     assert res_b["exception_details"]["closure_authorized"] is False
 
+
+def test_clock_leakage_regression():
+    # 1. run benchmark with fixed as_of_time (simulated)
+    from evaluation.datagen import generate_demo_dataset
+    from graph import ProvenanceGraph
+    from main import evaluate_system
+    import datetime
+    
+    records, cases = generate_demo_dataset()
+    g = ProvenanceGraph()
+    # just basic setup to allow evaluate_system to run without error
+    for r in records:
+        if type(r).__name__ == "Order": g.add_order(r)
+    
+    fixed_time = datetime.datetime(2026, 8, 15, 12, 0, 0)
+    evaluate_system(1, cases[:1], g, as_of_time=fixed_time)
+    
+    # 2. run a normal runtime/demo reconciliation afterward
+    res = engine.reconcile_order(g.get_subgraph_for_order(cases[0][0]), target_order_id=cases[0][0])
+    
+    # 3. prove benchmark clock did not leak into runtime state
+    # If the leak happened, engine.evaluation_time would exist or something
+    # Actually, we can check if evaluation_time was injected globally.
+    
+    assert not hasattr(engine, "evaluation_time"), "Benchmark clock leaked into global engine state"

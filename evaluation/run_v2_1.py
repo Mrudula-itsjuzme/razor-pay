@@ -3,11 +3,12 @@ import os
 import random
 from decimal import Decimal
 import datetime
-from datagen import generate_demo_dataset, generate_adversarial_dataset, generate_complex_dataset
-from datagen_v2_1 import generate_complex_dataset_v2_1
+from evaluation.datagen import generate_demo_dataset, generate_adversarial_dataset, generate_complex_dataset
+from evaluation.datagen_v2_1 import generate_complex_dataset_v2_1
 from graph import ProvenanceGraph
-from main import engine, evaluate_system, global_graph
-from eval_engine import calculate_proof_debt, safe_automation_frontier, evidence_degradation_experiment
+from main import engine, global_graph
+from evaluation.metrics import evaluate_system
+from evaluation.policy import calculate_proof_debt, safe_automation_frontier, evidence_degradation_experiment
 
 def make_graph(records):
     g = ProvenanceGraph()
@@ -37,7 +38,6 @@ def make_graph(records):
 def main():
     print("Generating complex dataset v2.1...")
     cpx_rec, cpx_cases, as_of_time = generate_complex_dataset_v2_1()
-    engine.evaluation_time = as_of_time
     cpx_graph = make_graph(cpx_rec)
     
     # Stratified distribution
@@ -46,9 +46,9 @@ def main():
         dist[gt] = dist.get(gt, 0) + 1
         
     print("Evaluating...")
-    co_cpx = evaluate_system(4, cpx_cases, cpx_graph)
-    ru_cpx = evaluate_system(3, cpx_cases, cpx_graph)
-    ex_cpx = evaluate_system(1, cpx_cases, cpx_graph)
+    co_cpx = evaluate_system(4, cpx_cases, cpx_graph, as_of_time=as_of_time)
+    ru_cpx = evaluate_system(3, cpx_cases, cpx_graph, as_of_time=as_of_time)
+    ex_cpx = evaluate_system(1, cpx_cases, cpx_graph, as_of_time=as_of_time)
     
     # --- V2 Policy Evaluation ---
     expected_v2 = []
@@ -56,12 +56,12 @@ def main():
     
     scenario_v2_table = {}
     
-    from eval_engine import calculate_financial_partition, calculate_policy_metrics_v2
-    fin_partition = calculate_financial_partition(engine, cpx_cases, cpx_graph)
+    from evaluation.policy import calculate_financial_partition, calculate_policy_metrics_v2
+    fin_partition = calculate_financial_partition(engine, cpx_cases, cpx_graph, as_of_time=as_of_time)
     
     for order_id, gt in cpx_cases:
         subgraph = cpx_graph.get_subgraph_for_order(order_id)
-        res = engine.reconcile_order(subgraph, target_order_id=order_id, max_layer=4)
+        res = engine.reconcile_order(subgraph, target_order_id=order_id, max_layer=4, as_of_time=as_of_time)
         decision = res.get("decision", "")
         
         # Predicted State
@@ -145,25 +145,37 @@ def main():
                 return float(obj)
             return super(DecimalEncoder, self).default(obj)
             
-    with open('final_evaluation_v2_1.json', 'w') as f:
+    with open('evaluation/results/final_evaluation_v2_1.json', 'w') as f:
         json.dump(final, f, indent=2, cls=DecimalEncoder)
         
-    print("Wrote final_evaluation_v2_1.json")
+    print("Wrote evaluation/results/final_evaluation_v2_1.json")
     
     # Write MD
-    with open('final_evaluation_v2_1.md', 'w') as f:
+    with open('evaluation/results/final_evaluation_v2_1.md', 'w') as f:
         f.write("# Final Evaluation V2.1\n\n")
-        f.write(f"**Dataset Version:** COMPLEX_BENCHMARK_V2_1\n")
+        f.write(f"**Benchmark Version:** COMPLEX_BENCHMARK_V2_1\n")
+        f.write(f"**Seed:** {final['seed']}\n")
         f.write(f"**Case Count:** {final['case_count']}\n")
-        f.write(f"**Total Batch Exposure:** ₹{final['total_batch_exposure']:.2f}\n")
-        f.write("\n## Policy Metrics\n")
-        f.write(f"- Overall Accuracy: {final['policy_metrics']['overall_policy_accuracy']:.4f}\n")
-        f.write(f"- Safe Closure Recall: {final['finance_specific_safety_metrics']['safe_closure_recall']:.4f}\n")
-        f.write(f"- Unsafe Closure Rate: {final['finance_specific_safety_metrics']['unsafe_closure_rate']:.4f}\n")
-        f.write("\n## Financial Partition\n")
-        for k, v in final['financial_partition'].items():
-            f.write(f"- {k}: {v['count']} cases (₹{v['exposure']:.2f})\n")
-    print("Wrote final_evaluation_v2_1.md")
+        f.write(f"**Record Count:** {final['record_count']}\n")
+        f.write(f"**Scenario/Mechanism Count:** {len(final['scenario_level_results'])}\n")
+        f.write(f"**Total Exposure:** ₹{final['total_batch_exposure']:.2f}\n\n")
+        
+        f.write("## Financial Partition\n")
+        f.write(f"- **PROVEN:** ₹{final['financial_partition']['PROVEN']['exposure']:.2f}\n")
+        f.write(f"- **PENDING:** ₹{final['financial_partition']['PENDING_WITHIN_SLA']['exposure']:.2f}\n")
+        f.write(f"- **Actionable Proof Debt:** ₹{final['proof_debt']['actionable_proof_debt']:.2f}\n\n")
+        
+        f.write("## Three-State Policy Matrix\n")
+        f.write("```json\n")
+        f.write(json.dumps(final["3_class_policy_confusion_matrix"], indent=2))
+        f.write("\n```\n\n")
+        
+        f.write("## Policy Accuracy Metrics (observed on the fixed synthetic V2.1 benchmark)\n")
+        f.write(f"- **Observed Unsafe Closure Rate:** {final['finance_specific_safety_metrics']['unsafe_closure_rate']:.4f}\n")
+        f.write(f"- **Safe Closure Recall:** {final['finance_specific_safety_metrics']['safe_closure_recall']:.4f}\n")
+        f.write(f"- **Pending-State Accuracy:** {final['finance_specific_safety_metrics']['pending_state_accuracy']:.4f}\n")
+        f.write(f"- **Exception Detection Recall:** {final['finance_specific_safety_metrics']['exception_detection_recall']:.4f}\n")
+    print("Wrote evaluation/results/final_evaluation_v2_1.md")
 
 if __name__ == "__main__":
     main()

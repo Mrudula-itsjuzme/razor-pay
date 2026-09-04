@@ -1,79 +1,86 @@
 # Finance Controller
 
-## Don't match transactions. Prove what happened to the money.
+**A proof-carrying reconciliation agent for payment operations.**
 
-Traditional reconciliation asks: "Which records match?"
-Naive AI reconciliation asks: "What probably happened?"
-This Finance Controller asks: **"What happened to the money, and does the available evidence constitute sufficient proof to safely close the books?"**
+Reconstructs what happened to the money, automatically closes only what the evidence proves, and turns everything else into an actionable proof gap.
 
-It replaces probabilistic matching with a Proof-Carrying Financial Provenance Engine.
+> Don't match transactions. Prove what happened to the money.
 
-### Final Evaluated Metrics (v1.0)
-- **Adversarial Safety**: 0 unsafe closures across 36 adversarial boundary cases.
-- **Complex Operations F1**: 0.7436 across 150 synthetic structures (1144 records).
-- **Proof-Complete Closure**: 100% (The system refuses to close without a continuous subgraph of financial evidence).
-- **Proof Debt Tracking**: Actively measures gross unverified ledger exposure in real-time.
+## 1. THE PROBLEM
+Amounts matching does not prove they represent the same money.
 
----
+## 2. THE CORE IDEA
+Every automated close must carry a reconciliation proof.
 
-### 30-Second Example
+## 3. 30-SECOND EXAMPLE
+- **Complete evidence** -> RECONCILED
+- **Same arithmetic with missing fee** -> ESCALATED
+- **Same-amount wrong UTR** -> ignored as unrelated evidence
 
-**Case A: The Happy Path**
-A ₹1,000 order has a payment, a 2% fee, 18% tax, and a ₹976.40 settlement. The AI traverses the complete lifecycle, proves the accounting identity exactly, and safely marks the ledger as `RECONCILED`.
+## 4. CURRENT EVALUATION
+**Observed on the fixed synthetic V2.1 benchmark**
+- **Benchmark Version:** COMPLEX_BENCHMARK_V2_1
+- **Seed:** 4242
+- **Case Count:** 105
+- **Record Count:** 835
+- **Scenario/Mechanism Count:** 21
+- **Total Exposure:** ₹2,689,785.86
+- **PROVEN:** ₹579,893.71
+- **PENDING:** ₹288,922.63
+- **Actionable Proof Debt:** ₹1,820,969.52
 
-**Case B: The Plausible Counterfactual**
-A ₹1,000 order has a payment and a ₹976.40 settlement. **However, the fee and tax records are missing.**
-A probabilistic system might auto-close this because "976.40 is obviously the standard deduction."
-This Controller constructs the exact same hypothesis ("Missing Fee"), flags it as a mathematically plausible **counterfactual**, warns that evidence is missing, and halts automation (`ESCALATED`).
+**Three-State Policy Matrix (RECONCILED, PENDING, ESCALATED):**
+- **Observed Unsafe Closure Rate:** 0.0%
+- **Safe Closure Recall:** 83.33%
+- **Pending-State Accuracy:** 100%
+- **Exception Detection Recall:** 100%
 
-**Plausibility != Proof.**
+## 5. PRODUCT LOOP
+Close -> Investigate -> Resolve -> Prove
 
----
+## 6. WHAT AI DOES / DOES NOT DO
 
-## Architecture
+| AI MAY: | AI MAY NOT: |
+| --- | --- |
+| - rank evidence-backed hypotheses<br>- explain proof gaps<br>- suggest investigation steps<br>- summarize exceptions | - perform authoritative accounting arithmetic<br>- fabricate evidence<br>- authorize closure<br>- override temporal validity<br>- override proof contracts<br>- convert hypotheses into facts |
 
-The system consists of three main components:
-1. **Provenance Graph (NetworkX)**: Models the actual lifecycle of money as a directed graph rather than tabular rows.
-2. **Reconciliation Engine (Deterministic)**: Evaluates subgraphs against strict, evidence-based Proof Contracts.
-3. **AI Investigator (Offline Fallback)**: Examines broken subgraphs to generate testable counterfactual hypotheses for human reviewers.
+The model may improve investigation quality. It does not determine accounting truth.
 
----
+## 7. WHAT IS REAL / SIMULATED
 
-## Quickstart
+**REAL:**
+- provenance graph
+- deterministic reconciliation
+- proof contracts
+- temporal validity
+- typed exceptions
+- proof certificates
+- benchmark engine
+- evidence degradation
+- dashboard/demo
 
+**SYNTHETIC:**
+- benchmark transaction data
+
+**RAZORPAY:**
+Currently uses synthetic data generator that maps to Razorpay schemas. No live integration is demonstrated.
+
+## 8. QUICKSTART
 ```bash
-# Clone the repository
-git clone <repo-url>
-cd finance
-
-# Install dependencies
+git clone https://github.com/Mrudula-itsjuzme/razor-pay.git
+cd razor-pay
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-
-# Start the application
-uvicorn main:app --host 127.0.0.1 --port 8000
-```
-Open `http://localhost:8000` in your browser.
-
-## Docker
-
-```bash
-docker build -t finance-controller .
-docker run -p 8000:8000 finance-controller
+pytest -q
+python evaluation/run_v2_1.py
+make demo
 ```
 
-## Tests
-
-Execute the complete regression and isolation suite:
-```bash
-pytest test_system.py
-```
-
-## Limitations
-
-- **Synthetic Evaluation**: All data is synthetically generated.
-- **Benchmark Size**: The Complex Finance Close benchmark contains 150 cases and 1144 records. While structurally rich, it is not production-scale volume.
-- **No Live Merchant Credentials**: The Razorpay adapter simulates compatibility. No live API credentials or real PII are used.
-- **Offline Fallback Investigator**: The current AI investigator uses rules-based offline counterfactuals to ensure safety and determinism during the hackathon demo environment without relying on external LLM availability.
-- **No FX Modeling**: Currency mismatch is supported as an adversarial failure mode, but explicit FX conversion math is not modeled.
+## 9. LIMITATIONS
+- synthetic financial data
+- no FX conversion
+- no production merchant validation
+- strict temporal ordering may over-flag delayed distributed events
+- offline/rules fallback investigator if applicable
+- benchmark scope

@@ -51,7 +51,7 @@ class OfflineFallbackInvestigator(BaseInvestigator):
             tax_estimate = (fee_estimate * Decimal('0.18')).quantize(Decimal('0.01'))
             
             if abs(diff - fee_estimate) <= Decimal('0.5') or abs(diff - (fee_estimate + tax_estimate)) <= Decimal('0.5'):
-                unsupported_hypotheses.append(f"Difference perfectly matches standard 2% fee deduction, but NO actual fee record exists in system.")
+                unsupported_hypotheses.append(f"Difference exactly matches standard 2% fee deduction, but NO actual fee record exists in system.")
                 # We intentionally DO NOT set resolution to RECONCILED. It must remain UNRESOLVED because hypothesis != evidence.
                 broken_edge = "Payment -> Fee (Missing Node)"
             else:

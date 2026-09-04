@@ -28,7 +28,7 @@ def get_failure_category(ground_truth: str, decision: str, is_unresolvable: bool
         else:
             return "UNNECESSARY_ABSTENTION"
 
-def calculate_proof_debt(engine, cases, graph_instance):
+def calculate_proof_debt(engine, cases, graph_instance, as_of_time=None):
     total_unresolved = Decimal('0.00')
     pending_exposure = Decimal('0.00')
     actionable_proof_debt = Decimal('0.00')
@@ -39,7 +39,7 @@ def calculate_proof_debt(engine, cases, graph_instance):
     
     for order_id, _ in cases:
         subgraph = graph_instance.get_subgraph_for_order(order_id)
-        res = engine.reconcile_order(subgraph, target_order_id=order_id, max_layer=4)
+        res = engine.reconcile_order(subgraph, target_order_id=order_id, max_layer=4, as_of_time=as_of_time)
         decision = res.get("decision", "")
         exposure = Decimal(res.get("expected_net", "0.00"))
         
@@ -80,7 +80,7 @@ def calculate_proof_debt(engine, cases, graph_instance):
         "top_cases": top_cases_list
     }
 
-def safe_automation_frontier(engine, cases, graph_instance):
+def safe_automation_frontier(engine, cases, graph_instance, as_of_time=None):
     # Simulate different tolerance or completeness thresholds
     # We will just simulate match_confidence requirements
     results = []
@@ -92,7 +92,7 @@ def safe_automation_frontier(engine, cases, graph_instance):
         
         for order_id, ground_truth in cases:
             subgraph = graph_instance.get_subgraph_for_order(order_id)
-            res = engine.reconcile_order(subgraph, target_order_id=order_id)
+            res = engine.reconcile_order(subgraph, target_order_id=order_id, as_of_time=as_of_time)
             
             decision = res["decision"]
             completeness = res.get("proof_completeness", 0)
@@ -111,7 +111,7 @@ def safe_automation_frontier(engine, cases, graph_instance):
         
     return results
 
-def evidence_degradation_experiment(engine, base_cases, graph_instance):
+def evidence_degradation_experiment(engine, base_cases, graph_instance, as_of_time=None):
     results = []
     # Test 100%, 80%, 60%, 40%, 20%, 0% retention
     for retention in [1.0, 0.8, 0.6, 0.4, 0.2, 0.0]:
@@ -136,7 +136,7 @@ def evidence_degradation_experiment(engine, base_cases, graph_instance):
             degraded_subgraph = subgraph.copy()
             degraded_subgraph.remove_nodes_from(nodes_to_remove)
             
-            res = engine.reconcile_order(degraded_subgraph, target_order_id=order_id)
+            res = engine.reconcile_order(degraded_subgraph, target_order_id=order_id, as_of_time=as_of_time)
             if "decision" not in res:
                 continue
             decision = res["decision"]
@@ -228,7 +228,7 @@ def calculate_policy_metrics_v2(expected_list, predicted_list):
     metrics["over_abstention_rate"] = over_abstentions / expected_reconcile if expected_reconcile > 0 else 0.0
     
     return metrics, cm
-def calculate_financial_partition(engine, cases, graph_instance):
+def calculate_financial_partition(engine, cases, graph_instance, as_of_time=None):
     from decimal import Decimal
     close_books_buckets = {
         "PROVEN": {"count": 0, "exposure": Decimal('0.0')},
@@ -251,7 +251,7 @@ def calculate_financial_partition(engine, cases, graph_instance):
     
     for order_id, _ in cases:
         subgraph = graph_instance.get_subgraph_for_order(order_id)
-        res = engine.reconcile_order(subgraph, target_order_id=order_id, max_layer=4)
+        res = engine.reconcile_order(subgraph, target_order_id=order_id, max_layer=4, as_of_time=as_of_time)
         exposure = Decimal(res.get("expected_net", "0.00"))
         
         total_batch_exposure += exposure
