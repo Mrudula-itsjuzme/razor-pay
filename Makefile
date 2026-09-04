@@ -1,14 +1,18 @@
-.PHONY: demo test eval eval-scale
-
-demo:
-	@echo "Starting local application..."
-	uvicorn main:app --reload --host 0.0.0.0 --port 8000
+.PHONY: test test-no-ai eval eval-scale demo verify
 
 test:
-	pytest -q
+	PYTHONPATH=. pytest -q
+
+test-no-ai:
+	PYTHONPATH=. pytest -q tests/test_no_ai.py
 
 eval:
-	PYTHONPATH=. python3 evaluation/run_v2_1.py
+	PYTHONPATH=. python evaluation/run_v2_1.py
 
 eval-scale:
-	PYTHONPATH=. python3 evaluation/run_scale.py
+	PYTHONPATH=. python evaluation/run_scale.py
+
+demo:
+	uvicorn main:app --host 127.0.0.1 --port 8000
+
+verify: test test-no-ai eval eval-scale

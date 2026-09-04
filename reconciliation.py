@@ -360,7 +360,10 @@ class ReconciliationEngine:
 
         # Layer 4 AI (Restricted to investigation only)
         if not closure_authorized and max_layer >= 4 and not sla_breached:
-            ai_result = analyze_exception(graph, expected_net, net_observed)
+            try:
+                ai_result = analyze_exception(graph, expected_net, net_observed)
+            except Exception:
+                ai_result = {"recommended_action": "MANUAL_REVIEW_REQUIRED (AI Unavailable)"}
             audit_trail["ai_investigation"] = ai_result
             final_decision = "ESCALATED"
             decision_authority = "HUMAN_REVIEW_REQUIRED"
