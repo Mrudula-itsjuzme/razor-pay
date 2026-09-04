@@ -211,8 +211,9 @@ def generate_adversarial_case_v2_1(case_id: str, case_index: int, scenario: str,
     elif scenario == "ADV_TIMESTAMP_LURE":
         settlement = Settlement(settlement_id=f"set_adv_{case_id}", amount=expected_settlement, status="COMPLETED", initiated_at=initiated_at, reference=f"UTR_adv_{case_id}")
         items.append(SettlementItem(item_id=f"si_adv_{case_id}_1", settlement_id=settlement.settlement_id, payment_id=payment.payment_id, amount=expected_settlement))
-        bank_tx = BankTransaction(bank_transaction_id=f"btx_adv_{case_id}", amount=expected_settlement, timestamp=initiated_at + timedelta(days=60), reference=settlement.reference, direction="CREDIT")
-        records.extend([settlement, bank_tx])
+        bank_tx = BankTransaction(bank_transaction_id=f"btx_adv_{case_id}", amount=expected_settlement, timestamp=initiated_at, reference=settlement.reference, direction="CREDIT")
+        lure_bank_tx = BankTransaction(bank_transaction_id=f"btx_adv_lure_{case_id}", amount=expected_settlement, timestamp=initiated_at + timedelta(days=60), reference=f"UTR_UNRELATED_LURE_{case_id}", direction="CREDIT")
+        records.extend([settlement, bank_tx, lure_bank_tx])
         
     elif scenario == "ADV_WRONG_REFUND_PERFECT_DISCREPANCY":
         # Discrepancy is 50. But refund is linked to completely unrelated payment.

@@ -2,25 +2,25 @@
   "dataset_version": "COMPLEX_BENCHMARK_V2_1",
   "seed": 4242,
   "case_count": 105,
-  "record_count": 835,
+  "record_count": 840,
   "financial_denominator_definition": "expected net settlement value per order",
-  "total_batch_exposure": 2383358.52,
+  "total_batch_exposure": 2291114.74,
   "financial_partition": {
     "PROVEN": {
-      "count": 35,
-      "exposure": 702367.95
+      "count": 30,
+      "exposure": 474305.34
     },
     "PENDING_WITHIN_SLA": {
-      "count": 5,
-      "exposure": 131814.04
+      "count": 0,
+      "exposure": 0.0
     },
     "MISSING_EVIDENCE": {
-      "count": 25,
-      "exposure": 554511.04
+      "count": 30,
+      "exposure": 794675.83
     },
     "CONFLICTING_EVIDENCE": {
-      "count": 20,
-      "exposure": 467053.1
+      "count": 30,
+      "exposure": 638259.95
     },
     "AMBIGUOUS_PROVENANCE": {
       "count": 0,
@@ -31,8 +31,8 @@
       "exposure": 0.0
     },
     "TEMPORAL_EXCEPTION": {
-      "count": 10,
-      "exposure": 274718.94
+      "count": 5,
+      "exposure": 136048.65
     },
     "UNRESOLVABLE": {
       "count": 0,
@@ -40,35 +40,36 @@
     },
     "UNCLASSIFIED": {
       "count": 10,
-      "exposure": 252893.45
+      "exposure": 247824.97
     }
   },
   "proof_debt": {
-    "total_unresolved_exposure": 1680990.57,
-    "pending_exposure": 131814.04,
-    "actionable_proof_debt": 1549176.53,
+    "total_unresolved_exposure": 1816809.4,
+    "pending_exposure": 0.0,
+    "actionable_proof_debt": 1816809.4,
     "by_cause": {
-      "SETTLEMENT_SLA_BREACHED": 166984.91,
-      "UNKNOWN": 252893.45,
-      "FEE_RECORD_MISSING": 554511.04,
-      "DUPLICATE_FEE_RECORDS": 136204.84,
-      "CURRENCY_MISMATCH": 102351.13,
-      "FUTURE_DATED_EVIDENCE": 107734.03,
-      "DUPLICATE_BANK_IMPORT": 120095.25,
-      "DUPLICATE_SETTLEMENT_REFERENCE": 108401.88
+      "SETTLEMENT_SLA_BREACHED": 136048.65,
+      "UNKNOWN": 247824.97,
+      "FEE_RECORD_MISSING": 794675.83,
+      "DUPLICATE_FEE_RECORDS": 109904.52,
+      "DUPLICATE_UTR": 109860.63,
+      "CURRENCY_MISMATCH": 127781.47,
+      "WRONG_REFUND_PROVENANCE": 98069.62,
+      "DUPLICATE_BANK_IMPORT": 106358.27,
+      "DUPLICATE_SETTLEMENT_REFERENCE": 86285.44
     },
     "by_action": {
-      "Verify settlement status and retrieve bank confirmation.": 274718.94,
-      "Manual human review required.": 252893.45,
-      "Retrieve authoritative fee record.": 554511.04,
-      "Resolve data conflict before attempting closure.": 467053.1
+      "Verify settlement status and retrieve bank confirmation.": 136048.65,
+      "Manual human review required.": 247824.97,
+      "Retrieve authoritative fee record.": 794675.83,
+      "Resolve data conflict before attempting closure.": 638259.95
     }
   },
   "3_class_policy_confusion_matrix": {
     "RECONCILED": {
-      "RECONCILED": 25,
+      "RECONCILED": 30,
       "PENDING": 0,
-      "ESCALATED": 5
+      "ESCALATED": 0
     },
     "PENDING": {
       "RECONCILED": 0,
@@ -76,21 +77,21 @@
       "ESCALATED": 0
     },
     "ESCALATED": {
-      "RECONCILED": 10,
+      "RECONCILED": 0,
       "PENDING": 0,
-      "ESCALATED": 55
+      "ESCALATED": 65
     }
   },
   "policy_metrics": {
-    "overall_policy_accuracy": 0.8571428571428571,
-    "macro_precision": 0.876984126984127,
-    "macro_recall": 0.8931623931623932,
-    "macro_f1": 0.883076923076923,
+    "overall_policy_accuracy": 1.0,
+    "macro_precision": 1.0,
+    "macro_recall": 1.0,
+    "macro_f1": 1.0,
     "per_class": {
       "RECONCILED": {
-        "precision": 0.7142857142857143,
-        "recall": 0.8333333333333334,
-        "f1": 0.7692307692307692,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
         "support": 30
       },
       "PENDING": {
@@ -100,23 +101,23 @@
         "support": 10
       },
       "ESCALATED": {
-        "precision": 0.9166666666666666,
-        "recall": 0.8461538461538461,
-        "f1": 0.8799999999999999,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
         "support": 65
       }
     }
   },
   "finance_specific_safety_metrics": {
-    "safe_closure_recall": 0.8333333333333334,
-    "unsafe_closure_rate": 0.15384615384615385,
+    "safe_closure_recall": 1.0,
+    "unsafe_closure_rate": 0.0,
     "pending_state_accuracy": 1.0,
-    "exception_detection_recall": 0.8461538461538461,
-    "over_abstention_rate": 0.16666666666666666
+    "exception_detection_recall": 1.0,
+    "over_abstention_rate": 0.0
   },
   "proof_metrics": {
-    "evidence_citation_precision": 0.9841269841269841,
-    "evidence_requirement_recall": 0.9672131147540983,
+    "evidence_citation_precision": 1.0,
+    "evidence_requirement_recall": 0.95,
     "proof_complete_closure_rate": 1.0,
     "broken_proof_closure_rate": 0.0,
     "right_decision_wrong_proof_rate": 0.0
@@ -259,12 +260,12 @@
       "case_count": 5,
       "expected_state": "ESCALATED",
       "actual_dist": {
-        "RECONCILED": 5,
+        "RECONCILED": 0,
         "PENDING": 0,
-        "ESCALATED": 0
+        "ESCALATED": 5
       },
-      "correct": 0,
-      "incorrect": 5
+      "correct": 5,
+      "incorrect": 0
     },
     {
       "scenario": "ADV_DUPLICATE_PAYMENT",
@@ -295,24 +296,24 @@
       "case_count": 5,
       "expected_state": "RECONCILED",
       "actual_dist": {
-        "RECONCILED": 0,
+        "RECONCILED": 5,
         "PENDING": 0,
-        "ESCALATED": 5
+        "ESCALATED": 0
       },
-      "correct": 0,
-      "incorrect": 5
+      "correct": 5,
+      "incorrect": 0
     },
     {
       "scenario": "ADV_WRONG_REFUND_PERFECT_DISCREPANCY",
       "case_count": 5,
       "expected_state": "ESCALATED",
       "actual_dist": {
-        "RECONCILED": 5,
+        "RECONCILED": 0,
         "PENDING": 0,
-        "ESCALATED": 0
+        "ESCALATED": 5
       },
-      "correct": 0,
-      "incorrect": 5
+      "correct": 5,
+      "incorrect": 0
     },
     {
       "scenario": "ADV_MIXED_PROVENANCE_SPLIT",
@@ -376,5 +377,5 @@
     }
   ],
   "test_result": "PASS",
-  "timestamp": "2026-09-04T10:24:29.129902+00:00"
+  "timestamp": "2026-09-04T11:35:03.221671+00:00"
 }

@@ -48,10 +48,26 @@ def load_demo():
     global global_graph, global_cases
     global_graph = ProvenanceGraph()
     records, cases, as_of_time = generate_complex_dataset_v2_1()
-    global_cases = cases
-    
+
+    curated_scenarios = [
+        "CLEAN",
+        "SPLIT_SETTLEMENT",
+        "MISSING_FEE_EVIDENCE",
+        "ADV_SAME_AMOUNT_WRONG_TX",
+        "ADV_DUPLICATE_UTR",
+        "ADV_WRONG_REFUND_PERFECT_DISCREPANCY",
+        "PENDING_BANK_SLA_SAFE"
+    ]
+    global_cases = []
+    seen_scenarios = set()
+    for c in cases:
+        if c[1] in curated_scenarios and c[1] not in seen_scenarios:
+            global_cases.append(c)
+            seen_scenarios.add(c[1])
+
+    # We keep all records in the graph for context, but only expose curated cases to the UI
     items = []
-    
+
     for r in records:
         if isinstance(r, Order): global_graph.add_order(r)
         elif isinstance(r, Payment): global_graph.add_payment(r)
@@ -61,12 +77,12 @@ def load_demo():
         elif isinstance(r, BankTransaction): global_graph.add_bank_transaction(r)
         elif isinstance(r, LedgerEntry): global_graph.add_ledger_entry(r)
         elif isinstance(r, SettlementItem): items.append(r)
-            
+
     for r in records:
         if isinstance(r, Settlement):
             s_items = [i for i in items if i.settlement_id == r.settlement_id]
             global_graph.add_settlement(r, s_items)
-            
+
     for n, data in global_graph.g.nodes(data=True):
         if data.get('type') == 'BankTransaction':
             tx = data['data']
@@ -74,23 +90,23 @@ def load_demo():
                 for sn, sdata in global_graph.g.nodes(data=True):
                     if sdata.get('type') == 'Settlement' and sdata['data'].reference == tx.reference:
                         global_graph.link_bank_transaction_to_settlement(tx.bank_transaction_id, sdata['data'].settlement_id)
-                        
-    return {"message": f"Loaded deterministic Judge Demo with {len(cases)} cases."}
+
+    return {"message": f"Loaded deterministic Judge Demo with {len(global_cases)} cases."}
 
 @app.post("/api/ingest")
 def ingest_data(num_orders: int = 2500):
     global global_graph, global_cases
     global_graph = ProvenanceGraph()
-    
+
     adapter = RazorpayAdapter()
     rzp_records, rzp_msg = adapter.fetch_recent_data()
-    
+
     # We will use the synthetic generator for the demo
     records, cases = generate_dataset(num_orders)
     global_cases = cases
-    
+
     items = []
-    
+
     # First pass: add nodes
     for r in records:
         if isinstance(r, Order): global_graph.add_order(r)
@@ -101,13 +117,13 @@ def ingest_data(num_orders: int = 2500):
         elif isinstance(r, BankTransaction): global_graph.add_bank_transaction(r)
         elif isinstance(r, LedgerEntry): global_graph.add_ledger_entry(r)
         elif isinstance(r, SettlementItem): items.append(r)
-            
+
     # Second pass: Settlements that need items
     for r in records:
         if isinstance(r, Settlement):
             s_items = [i for i in items if i.settlement_id == r.settlement_id]
             global_graph.add_settlement(r, s_items)
-            
+
     # Third pass: linking bank txs based on UTR/reference
     for n, data in global_graph.g.nodes(data=True):
         if data.get('type') == 'BankTransaction':
@@ -117,7 +133,7 @@ def ingest_data(num_orders: int = 2500):
                 for sn, sdata in global_graph.g.nodes(data=True):
                     if sdata.get('type') == 'Settlement' and sdata['data'].reference == tx.reference:
                         global_graph.link_bank_transaction_to_settlement(tx.bank_transaction_id, sdata['data'].settlement_id)
-                        
+
     return {"message": f"Ingested {len(records)} records for {len(cases)} cases into Provenance Graph. {rzp_msg}"}
 
 degraded_orders = set()
@@ -127,12 +143,12 @@ def reconcile_case(order_id: str, as_of_time: Optional[datetime] = None):
     subgraph = global_graph.get_subgraph_for_order(order_id)
     if not subgraph.nodes:
         raise HTTPException(status_code=404, detail="Order not found")
-        
+
     if order_id in degraded_orders:
         nodes_to_remove = [n for n, d in subgraph.nodes(data=True) if d.get("type") in ["BankTransaction", "Fee"]]
         subgraph = subgraph.copy()
         subgraph.remove_nodes_from(nodes_to_remove)
-        
+
     result = engine.reconcile_order(subgraph, target_order_id=order_id, as_of_time=as_of_time)
     return result
 
@@ -145,7 +161,7 @@ def list_cases():
         subgraph = global_graph.get_subgraph_for_order(order_id)
         res = engine.reconcile_order(subgraph, target_order_id=order_id)
         result.append({
-            "order_id": order_id, 
+            "order_id": order_id,
             "ground_truth": ground_truth,
             "decision": res["decision"]
         })
@@ -165,12 +181,12 @@ def restore_order(order_id: str):
 @app.get("/api/graph/{order_id}")
 def get_graph(order_id: str):
     subgraph = global_graph.get_subgraph_for_order(order_id)
-    
+
     if order_id in degraded_orders:
         nodes_to_remove = [n for n, d in subgraph.nodes(data=True) if d.get("type") in ["BankTransaction", "Fee"]]
         subgraph = subgraph.copy()
         subgraph.remove_nodes_from(nodes_to_remove)
-        
+
     nodes = []
     edges = []
     for n, data in subgraph.nodes(data=True):
@@ -187,7 +203,7 @@ def run_benchmark():
     total_cases = len(global_cases)
     if total_cases == 0:
         return {"error": "No data ingested"}
-        
+
     eval_cases = global_cases
     eval_total = len(eval_cases)
 
@@ -206,15 +222,15 @@ def run_eval_lab():
     total_cases = len(global_cases)
     if total_cases == 0:
         return {"error": "No data ingested"}
-        
+
     # 1. Normal Held-Out Evaluation
     normal_metrics = evaluate_system(4, global_cases, as_of_time=None)
-    
+
     # 2. Adversarial Evaluation
     adv_records, adv_cases = generate_adversarial_dataset()
     adv_graph = ProvenanceGraph()
     adv_items = []
-    
+
     for r in adv_records:
         if isinstance(r, Order): adv_graph.add_order(r)
         elif isinstance(r, Payment): adv_graph.add_payment(r)
@@ -224,12 +240,12 @@ def run_eval_lab():
         elif isinstance(r, BankTransaction): adv_graph.add_bank_transaction(r)
         elif isinstance(r, LedgerEntry): adv_graph.add_ledger_entry(r)
         elif isinstance(r, SettlementItem): adv_items.append(r)
-            
+
     for r in adv_records:
         if isinstance(r, Settlement):
             s_items = [i for i in adv_items if i.settlement_id == r.settlement_id]
             adv_graph.add_settlement(r, s_items)
-            
+
     for n, data in adv_graph.g.nodes(data=True):
         if data.get('type') == 'BankTransaction':
             tx = data['data']
@@ -237,18 +253,18 @@ def run_eval_lab():
                 for sn, sdata in adv_graph.g.nodes(data=True):
                     if sdata.get('type') == 'Settlement' and sdata['data'].reference == tx.reference:
                         adv_graph.link_bank_transaction_to_settlement(tx.bank_transaction_id, sdata['data'].settlement_id)
-                        
+
     adv_metrics = evaluate_system(4, adv_cases, adv_graph, as_of_time=None)
-    
+
     # 3. Proof Debt
     proof_debt = calculate_proof_debt(engine, global_cases, global_graph)
-    
+
     # 4. Safe Automation Frontier
     saf_results = safe_automation_frontier(engine, global_cases, global_graph)
-    
+
     # 5. Evidence Degradation
     ed_results = evidence_degradation_experiment(engine, global_cases, global_graph)
-    
+
     return {
         "overview": {
             "held_out_cases": len(global_cases),
@@ -266,7 +282,7 @@ def run_eval_lab():
 @app.post("/api/batch")
 def run_batch():
     start_time = time.time()
-    
+
     total_cases = len(global_cases)
     reconciled = 0
     pending = 0
@@ -274,18 +290,18 @@ def run_batch():
     human_review = 0
     unsafe_closures = 0
     total_value = Decimal('0.00')
-    
+
     hr_queue = []
-    
+
     for order_id, ground_truth in global_cases:
         subgraph = global_graph.get_subgraph_for_order(order_id)
         res = engine.reconcile_order(subgraph, target_order_id=order_id)
         decision = res["decision"]
         is_unresolvable = (ground_truth in ["UNRESOLVABLE", "MISSING_FEE_EVIDENCE"])
-        
+
         exposure = Decimal(res.get("expected_net", "0.00"))
         total_value += exposure
-        
+
         if decision.startswith("RECONCILED"):
             reconciled += 1
             if is_unresolvable:
@@ -296,7 +312,7 @@ def run_batch():
             exceptions += 1
         else:
             human_review += 1
-            
+
         if decision in ["ESCALATED", "HUMAN_REVIEW_REQUIRED", "UNRESOLVED"]:
             gap = res.get("proof_gap_report", {})
             hr_queue.append({
@@ -308,12 +324,12 @@ def run_batch():
                 "conflicts": gap.get("conflicting_evidence", []),
                 "recommended_action": "REQUEST BANK CONFIRMATION" if "BankTransaction" in res.get("reason", "") else "MANUAL INVESTIGATION"
             })
-            
+
     # Sort HR queue by highest exposure
     hr_queue.sort(key=lambda x: float(x["exposure"]), reverse=True)
-            
+
     latency_sec = time.time() - start_time
-    
+
     return {
         "summary": {
             "cases_processed": total_cases,

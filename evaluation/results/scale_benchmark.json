@@ -1,12 +1,12 @@
 {
   "case_count": 2500,
   "record_count": 20079,
-  "total_time_seconds": 0.4810920560003069,
-  "throughput_cases_per_sec": 5196.51066530686,
-  "p50_latency_ms": 0.15929200003483857,
-  "p95_latency_ms": 0.2571712001781634,
+  "total_time_seconds": 0.5106336749995535,
+  "throughput_cases_per_sec": 4895.877656330022,
+  "p50_latency_ms": 0.17821849996835226,
+  "p95_latency_ms": 0.26480999986233655,
   "unresolved_cases": 971,
   "measurement_boundary": "Includes get_subgraph_for_order and reconcile_order for each case sequentially. Excludes full graph construction.",
-  "graph_build_time_seconds": 13.571578073000182,
-  "timestamp": "2026-09-04T10:24:44.057306+00:00"
+  "graph_build_time_seconds": 10.396366245999161,
+  "timestamp": "2026-09-04T11:40:17.275303+00:00"
 }
