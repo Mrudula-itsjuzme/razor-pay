@@ -5,12 +5,12 @@
 **Case Count:** 105
 **Record Count:** 840
 **Scenario/Mechanism Count:** 21
-**Total Exposure:** ₹2620240.61
+**Total Exposure:** ₹2583918.06
 
 ## Financial Partition
-- **PROVEN:** ₹641891.22
+- **PROVEN:** ₹779700.81
 - **PENDING:** ₹0.00
-- **Actionable Proof Debt:** ₹1978349.39
+- **Actionable Proof Debt:** ₹1804217.25
 
 ## Three-State Policy Matrix
 ```json

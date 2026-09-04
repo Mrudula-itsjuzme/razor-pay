@@ -4,11 +4,11 @@
   "case_count": 105,
   "record_count": 840,
   "financial_denominator_definition": "expected net settlement value per order",
-  "total_batch_exposure": 2620240.61,
+  "total_batch_exposure": 2583918.06,
   "financial_partition": {
     "PROVEN": {
       "count": 30,
-      "exposure": 641891.22
+      "exposure": 779700.81
     },
     "PENDING_WITHIN_SLA": {
       "count": 0,
@@ -16,11 +16,11 @@
     },
     "MISSING_EVIDENCE": {
       "count": 30,
-      "exposure": 908587.06
+      "exposure": 673837.04
     },
     "CONFLICTING_EVIDENCE": {
       "count": 30,
-      "exposure": 657684.43
+      "exposure": 762335.99
     },
     "AMBIGUOUS_PROVENANCE": {
       "count": 0,
@@ -32,7 +32,7 @@
     },
     "TEMPORAL_EXCEPTION": {
       "count": 5,
-      "exposure": 91733.75
+      "exposure": 116966.86
     },
     "UNRESOLVABLE": {
       "count": 0,
@@ -40,29 +40,29 @@
     },
     "UNCLASSIFIED": {
       "count": 10,
-      "exposure": 320344.15
+      "exposure": 251077.36
     }
   },
   "proof_debt": {
-    "total_unresolved_exposure": 1978349.39,
+    "total_unresolved_exposure": 1804217.25,
     "pending_exposure": 0.0,
-    "actionable_proof_debt": 1978349.39,
+    "actionable_proof_debt": 1804217.25,
     "by_cause": {
-      "SETTLEMENT_SLA_BREACHED": 91733.75,
-      "UNKNOWN": 320344.15,
-      "FEE_RECORD_MISSING": 908587.06,
-      "DUPLICATE_FEE_RECORDS": 77366.96,
-      "DUPLICATE_UTR": 161018.12,
-      "CURRENCY_MISMATCH": 135938.31,
-      "WRONG_REFUND_PROVENANCE": 105202.21,
-      "DUPLICATE_BANK_IMPORT": 51609.58,
-      "DUPLICATE_SETTLEMENT_REFERENCE": 126549.25
+      "SETTLEMENT_SLA_BREACHED": 116966.86,
+      "UNKNOWN": 251077.36,
+      "FEE_RECORD_MISSING": 673837.04,
+      "DUPLICATE_FEE_RECORDS": 164018.58,
+      "DUPLICATE_UTR": 159927.47,
+      "CURRENCY_MISMATCH": 173607.83,
+      "WRONG_REFUND_PROVENANCE": 45296.17,
+      "DUPLICATE_BANK_IMPORT": 117590.79,
+      "DUPLICATE_SETTLEMENT_REFERENCE": 101895.15
     },
     "by_action": {
-      "Verify settlement status and retrieve bank confirmation.": 91733.75,
-      "Manual human review required.": 320344.15,
-      "Retrieve authoritative fee record.": 908587.06,
-      "Resolve data conflict before attempting closure.": 657684.43
+      "Verify settlement status and retrieve bank confirmation.": 116966.86,
+      "Manual human review required.": 251077.36,
+      "Retrieve authoritative fee record.": 673837.04,
+      "Resolve data conflict before attempting closure.": 762335.99
     }
   },
   "3_class_policy_confusion_matrix": {
@@ -377,5 +377,5 @@
     }
   ],
   "test_result": "PASS",
-  "timestamp": "2026-09-04T17:35:35.601445+00:00"
+  "timestamp": "2026-09-04T18:54:14.166547+00:00"
 }
