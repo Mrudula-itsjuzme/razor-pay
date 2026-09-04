@@ -5,3 +5,4 @@ pytest
 lark
 httpx
 pydantic
+pyyaml
