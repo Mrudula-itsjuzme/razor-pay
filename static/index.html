@@ -579,8 +579,8 @@
         </div>
         <div class="status-indicators">
             <div class="status-badge">Engine: <strong>Deterministic Gate</strong></div>
-            <div class="status-badge">AI Investigator: <strong>Explanation Only (No Closure Authority)</strong></div>
-            <div class="status-badge live">System State: <strong>PASSING (48 Pytests)</strong></div>
+            <div class="status-badge">AI Investigator · No Closure Authority</div>
+            <div class="status-badge live">Judge Mode: <strong>Live Cases</strong></div>
         </div>
     </header>
 
@@ -663,14 +663,14 @@
 
                 <div class="provenance-hero-diagram">
                     <div class="diagram-row">
-                        <div class="diagram-node target" id="hero-target-payment">Target Payment: pay_adv_adv_30075</div>
-                        <div class="diagram-arrow">────── Expected Refund ──────►</div>
-                        <div class="diagram-node" style="opacity:0.4;" id="hero-expected-refund">ref_adv_30075 (Missing)</div>
+                        <div class="diagram-node target" id="hero-target-payment">Target payment: loading runtime data…</div>
+                        <div class="diagram-arrow">────── accounting plausibility ──────►</div>
+                        <div class="diagram-node" style="opacity:0.5;" id="hero-expected-refund">Expected amount: loading runtime data…</div>
                     </div>
                     <div class="diagram-row" style="margin-top:6px;">
-                        <div class="diagram-node wrong" id="hero-observed-refund">Observed Refund: ref_adv_adv_30075</div>
-                        <div class="diagram-arrow" style="color:var(--accent-red);">◄── Cross-Payment Contradiction ──</div>
-                        <div class="diagram-node wrong" id="hero-wrong-payment">Belongs To: pay_adv_other_adv_30075</div>
+                        <div class="diagram-node wrong" id="hero-observed-refund">Observed settlement: loading runtime data…</div>
+                        <div class="diagram-arrow" style="color:var(--accent-red);">◄── provenance failure ──</div>
+                        <div class="diagram-node wrong" id="hero-wrong-payment">Contradictory bank lineage: loading runtime data…</div>
                     </div>
                 </div>
             </div>
@@ -808,13 +808,6 @@
                     <div class="batch-metric-title">Pending (SLA Safe)</div>
                     <div class="batch-metric-val text-blue" id="bm-pending">-</div>
                 </div>
-                <div class="batch-metric-card hero">
-                    <div class="batch-metric-title">
-                        Proof Debt
-                        <span class="tooltip-icon" title="Financial value whose lifecycle cannot yet be fully proven. It is NOT loss or missing money.">?</span>
-                    </div>
-                    <div class="batch-metric-val text-yellow" id="bm-debt">-</div>
-                </div>
             </div>
 
             <!-- HUMAN REVIEW INBOX (PHASE 7) -->
@@ -855,67 +848,15 @@
             </div>
 
             <div class="bench-grid-v2">
-
-                <!-- FIXED V2.1 BENCHMARK -->
                 <div class="bench-card-v2">
                     <h2>
-                        <span>A. Fixed Synthetic V2.1 Safety Benchmark</span>
-                        <span class="case-badge severity-HIGH" style="background:rgba(16,185,129,0.1); color:var(--accent-green); border-color:var(--accent-green);">PASSED</span>
+                        <span>Runtime Benchmarks</span>
+                        <span class="case-badge severity-HIGH" style="background:rgba(148,163,184,0.1); color:var(--text-muted); border-color:var(--border);">REFRESH PENDING</span>
                     </h2>
-
-                    <div style="font-family:var(--font-mono); font-size:0.8rem; margin:14px 0;">
-                        <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border);">
-                            <span>Total Test Cases</span><strong>105 Cases (21 Families)</strong>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border);">
-                            <span>Expected RECONCILED</span><strong>30 / 30 Matched</strong>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border);">
-                            <span>Expected PENDING</span><strong>10 / 10 Matched</strong>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border);">
-                            <span>Expected ESCALATED</span><strong>65 / 65 Matched</strong>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border);" class="text-green">
-                            <span>Observed Unsafe Closures</span><strong>0 Cases</strong>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; padding:6px 0;">
-                            <span>Proof Citation Precision</span><strong>100.0%</strong>
-                        </div>
-                    </div>
-
                     <div class="disclaimer-box">
-                        ⓘ Observed on the fixed synthetic V2.1 benchmark. This does not establish production accuracy.
+                        ⓘ Benchmark totals will be refreshed from runtime artifacts when the benchmark artifact pass is ready. No manual benchmark numbers are asserted in the UI.
                     </div>
                 </div>
-
-                <!-- SCALE BENCHMARK -->
-                <div class="bench-card-v2">
-                    <h2>
-                        <span>B. Synthetic Scale Benchmark</span>
-                        <span class="case-badge severity-HIGH" style="background:rgba(59,130,246,0.1); color:var(--accent-blue); border-color:var(--accent-blue);">PERFORMANCE</span>
-                    </h2>
-
-                    <div style="font-family:var(--font-mono); font-size:0.8rem; margin:14px 0;">
-                        <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border);">
-                            <span>Volume</span><strong>2,500 Cases / 20,079 Records</strong>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border);">
-                            <span>Total Runtime</span><strong>~0.27s TOTAL measured</strong>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border);">
-                            <span>Throughput</span><strong>~9,430 Cases / sec</strong>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--border);">
-                            <span>Latency (p50 / p95)</span><strong>p50 ~0.09ms | p95 ~0.13ms</strong>
-                        </div>
-                    </div>
-
-                    <div class="disclaimer-box">
-                        ⓘ Target subgraph extraction + reconciliation, sequentially. Full graph construction excluded from reconciliation latency.
-                    </div>
-                </div>
-
             </div>
 
         </div>
@@ -982,6 +923,16 @@
     <!-- JAVASCRIPT LOGIC -->
     <script>
         const API_BASE = '/api';
+
+        const resolveScenarioKey = (scenarioId) => {
+            if (!scenarioId) return scenarioId;
+            const aliases = {
+                CLEAN_PROVEN: 'CLEAN',
+                PARTIAL_REFUND_PROVEN: 'PARTIAL_REFUND',
+                PENDING_BANK_SLA_SAFE_PROVEN: 'PENDING_BANK_SLA_SAFE'
+            };
+            return aliases[scenarioId] || scenarioId;
+        };
 
         // 7 Curated Judge Scenarios (Phase 2 & Phase 16)
         const JUDGE_SCENARIOS = [
@@ -1064,10 +1015,12 @@
                 const res = await fetch(`${API_BASE}/cases`);
                 const casesList = await res.json();
 
-                // Map cases by ground_truth
-                casesList.forEach(c => {
-                    loadedCasesMap[c.ground_truth] = c;
-                });
+                for (const c of casesList) {
+                    const targetKey = resolveScenarioKey(c.ground_truth);
+                    const reconRes = await fetch(`${API_BASE}/reconcile/${c.order_id}?as_of_time=2026-08-15T12:00:00`);
+                    const reconData = await reconRes.json();
+                    loadedCasesMap[targetKey] = { ...c, ...reconData, decision: reconData.decision || c.decision };
+                }
 
                 renderJudgeCaseList();
                 selectJudgeCase(0);
@@ -1085,7 +1038,8 @@
                 item.className = `case-item ${idx === currentJudgeIndex ? 'active' : ''}`;
                 item.onclick = () => selectJudgeCase(idx);
 
-                const cObj = loadedCasesMap[sc.id];
+                const caseKey = resolveScenarioKey(sc.id);
+                const cObj = loadedCasesMap[caseKey];
                 const runtimeDec = cObj ? cObj.decision : sc.expected;
                 const decColor = runtimeDec === 'RECONCILED' ? 'text-green' : (runtimeDec === 'PENDING' ? 'text-blue' : 'text-red');
 
@@ -1105,6 +1059,7 @@
             renderJudgeCaseList();
 
             const scenario = JUDGE_SCENARIOS[idx];
+            const caseKey = resolveScenarioKey(scenario.id);
             document.getElementById('demo-scenario-name').innerText = scenario.name;
 
             const expBadge = document.getElementById('demo-expected-badge');
@@ -1113,28 +1068,18 @@
 
             document.getElementById('scenarioDescription').innerText = scenario.desc;
 
-            // Toggle Hero Card for WRONG REFUND (Phase 3)
             const heroCard = document.getElementById('heroWrongRefundCard');
             if (scenario.id === 'ADV_WRONG_REFUND_PERFECT_DISCREPANCY') {
                 heroCard.classList.remove('hidden');
-                const caseObjTemp = loadedCasesMap[scenario.id];
-                if (caseObjTemp) {
-                    const oid = caseObjTemp.order_id;
-                    document.getElementById('hero-target-payment').innerText = `Target Payment: pay_adv_${oid}`;
-                    document.getElementById('hero-expected-refund').innerText = `ref_adv_${oid} (Missing)`;
-                    document.getElementById('hero-observed-refund').innerText = `Observed Refund: ref_adv_${oid}`;
-                    document.getElementById('hero-wrong-payment').innerText = `Belongs To: pay_adv_other_${oid}`;
-                }
             } else {
                 heroCard.classList.add('hidden');
             }
 
-            const caseObj = loadedCasesMap[scenario.id];
+            const caseObj = loadedCasesMap[caseKey];
             if (!caseObj) return;
 
             const orderId = caseObj.order_id;
 
-            // Fetch details & graph
             const [reconRes, graphRes] = await Promise.all([
                 fetch(`${API_BASE}/reconcile/${orderId}?as_of_time=2026-08-15T12:00:00`),
                 fetch(`${API_BASE}/graph/${orderId}`)
@@ -1142,6 +1087,16 @@
 
             const reconData = await reconRes.json();
             const graphData = await graphRes.json();
+
+            if (scenario.id === 'ADV_WRONG_REFUND_PERFECT_DISCREPANCY') {
+                const targetPayment = graphData.nodes.find(n => n.label === 'Payment' && n.id.includes(orderId)) || { id: 'payment_unavailable' };
+                const settlement = graphData.nodes.find(n => n.label === 'Settlement' && n.id.includes(orderId)) || { id: 'settlement_unavailable' };
+                const bankTx = graphData.nodes.find(n => n.label === 'BankTransaction' && n.id.includes(orderId)) || { id: 'bank_tx_unavailable' };
+                document.getElementById('hero-target-payment').innerText = `Target payment: ${targetPayment.id}`;
+                document.getElementById('hero-expected-refund').innerText = `Expected net: ₹${Number(reconData.expected_net).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                document.getElementById('hero-observed-refund').innerText = `Observed settlement: ${settlement.id}`;
+                document.getElementById('hero-wrong-payment').innerText = `Bank credit lineage: ${bankTx.id}`;
+            }
 
             const apiBadge = document.getElementById('demo-api-decision-badge');
             apiBadge.innerText = reconData.decision;
@@ -1207,8 +1162,8 @@
                 closureBadge.innerText = "SAFE TO CLOSE";
                 reasonText.innerText = "Complete evidence verified deterministically.";
             } else if (isPending) {
-                closureBadge.innerText = "AWAITING SLA";
-                reasonText.innerText = data.reason || "Evidence pending within valid bank SLA window.";
+                closureBadge.innerText = scenario.id === 'PENDING_BANK_SLA_SAFE' ? 'Not yet required within SLA' : 'Awaiting bank evidence';
+                reasonText.innerText = scenario.id === 'PENDING_BANK_SLA_SAFE' ? 'Not yet required within SLA' : 'Awaiting bank evidence';
             } else {
                 closureBadge.innerText = "CLOSURE BLOCKED";
                 reasonText.innerText = gap ? gap.reason : (data.reason || "Proof gap detected.");
@@ -1321,13 +1276,6 @@
                 document.getElementById('bm-reconciled').innerText = bData.summary.reconciled;
                 document.getElementById('bm-pending').innerText = bData.summary.pending;
                 
-                // Proof Debt = sum of expected_net exposure for all non-RECONCILED and non-PENDING (i.e. escalated/unresolved) cases
-                let debtTotal = 0;
-                bData.review_queue.forEach(q => {
-                    debtTotal += parseFloat(q.exposure || 0);
-                });
-                document.getElementById('bm-debt').innerText = `₹${debtTotal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-
                 // Populate exception inbox from actual runtime review queue
                 const hrQueue = bData.review_queue.map(q => {
                     const matchedScenario = JUDGE_SCENARIOS.find(s => loadedCasesMap[s.id] && loadedCasesMap[s.id].order_id === q.order_id);
