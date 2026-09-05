@@ -152,15 +152,29 @@ class ReconciliationEngine:
                 sla_breached = True
 
         # Evidence Contract validation
-        contract_type = "STANDARD_PAYMENT_SETTLEMENT"
+        contract_type = "SETTLEMENT_TO_BANK"
+        inferred_adjustment = abs(expected_net - net_observed) > self.tolerance
         if len(settlements) > 1:
             contract_type = "SPLIT_SETTLEMENT"
         elif refunds:
+            contract_type = "PARTIAL_REFUND"
+        elif fees or taxes or inferred_adjustment:
+            contract_type = "FULL_LIFECYCLE"
+        elif total_refund > 0:
             contract_type = "PARTIAL_REFUND"
 
         required_evidence = ["Payment", "Settlement", "BankTransaction"]
         if contract_type == "PARTIAL_REFUND":
             required_evidence.append("Refund")
+        if contract_type == "FULL_LIFECYCLE":
+            if fees or total_fee > 0 or inferred_adjustment:
+                required_evidence.append("Fee")
+            if taxes or total_tax > 0 or inferred_adjustment:
+                required_evidence.append("Tax")
+        if contract_type == "PENDING_SETTLEMENT":
+            required_evidence = ["Payment", "Settlement"]
+
+        required_evidence = list(dict.fromkeys(required_evidence))
 
         evidence_slots = {}
         found_ids = []
@@ -214,6 +228,34 @@ class ReconciliationEngine:
                 found_types.add("Refund")
                 found_ids.extend([f"Refund:{r.refund_id}" for r in valid_refunds])
 
+        # Fee
+        if "Fee" in required_evidence:
+            valid_fees = [f for f in fees if f.payment_id in target_payment_ids]
+            evidence_slots["Fee"] = {
+                "required_type": "Fee",
+                "candidate_ids": [f.fee_id for f in fees],
+                "valid_target_ids": [f.fee_id for f in valid_fees],
+                "satisfied": len(valid_fees) > 0,
+                "reason": "Valid fee evidence found" if valid_fees else "No valid fee evidence for payment"
+            }
+            if valid_fees:
+                found_types.add("Fee")
+                found_ids.extend([f"Fee:{f.fee_id}" for f in valid_fees])
+
+        # Tax
+        if "Tax" in required_evidence:
+            valid_taxes = [t for t in taxes if t.payment_id in target_payment_ids]
+            evidence_slots["Tax"] = {
+                "required_type": "Tax",
+                "candidate_ids": [t.tax_id for t in taxes],
+                "valid_target_ids": [t.tax_id for t in valid_taxes],
+                "satisfied": len(valid_taxes) > 0,
+                "reason": "Valid tax evidence found" if valid_taxes else "No valid tax evidence for payment"
+            }
+            if valid_taxes:
+                found_types.add("Tax")
+                found_ids.extend([f"Tax:{t.tax_id}" for t in valid_taxes])
+
         # Settlement
         valid_settlements = settlements
         evidence_slots["Settlement"] = {
@@ -241,13 +283,22 @@ class ReconciliationEngine:
         # SLA adjustments
         if not valid_bank_txs and not sla_breached and temporal_valid and valid_settlements:
             contract_type = "PENDING_SETTLEMENT"
-            required_evidence.remove("BankTransaction")
+            required_evidence = ["Payment", "Settlement"]
             evidence_slots["BankTransaction"]["satisfied"] = True
             evidence_slots["BankTransaction"]["reason"] = "Pending within SLA"
 
         if "BankTransaction" in required_evidence and valid_bank_txs:
             found_types.add("BankTransaction")
             found_ids.extend([f"BankTransaction:{b.bank_transaction_id}" for b in valid_bank_txs])
+
+        # Full-life-cycle contracts treat missing fee/tax evidence as a proof gap when
+        # the settlement arithmetic implies a deduction but the supporting evidence is not observed.
+        if contract_type == "FULL_LIFECYCLE":
+            if inferred_adjustment and not any(f.payment_id in target_payment_ids for f in fees):
+                required_evidence.append("Fee")
+            if inferred_adjustment and not any(t.payment_id in target_payment_ids for t in taxes):
+                required_evidence.append("Tax")
+            required_evidence = list(dict.fromkeys(required_evidence))
 
         # Overall Proof Completeness
         satisfied_count = sum(1 for req in required_evidence if evidence_slots.get(req, {}).get("satisfied", False))
