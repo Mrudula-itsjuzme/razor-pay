@@ -51,6 +51,38 @@ Financial Records (Orders, Payments, Settlements, Bank Txs)
 
 The AI investigator is invoked from reconciliation orchestration to generate human-readable explanations and hypotheses, but has **no authority** over the deterministic closure gate.
 
+## Setup
+
+Recommended: Python 3.10 or newer.
+
+1. Create and activate a virtual environment:
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+2. Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+3. Run the API locally:
+
+```bash
+uvicorn main:app --reload --host 127.0.0.1 --port 8000
+```
+
+4. Run tests and evaluations:
+
+```bash
+make test
+make test-no-ai
+make eval
+```
+
+
 ---
 
 ## Judge Demo

@@ -16,3 +16,17 @@ The remediation focused on resolving P0 and P1 falsification vulnerabilities, re
   - Overall accuracy: 85.7% (reflecting rigorous fallback rules)
   - Safe Closure Recall: 83.3%
   - Throughput (Scale): ~5,190 cases/sec (p50: 0.15ms)
+
+## Quickstart
+
+To run the project locally (recommended Python 3.10+):
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+make test
+uvicorn main:app --reload --host 127.0.0.1 --port 8000
+```
+
+Use `make test-no-ai` to run the judge demo without contacting any LLM APIs.

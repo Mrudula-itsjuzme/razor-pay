@@ -73,3 +73,17 @@ When LLM credentials are absent or the model API fails, the system falls back se
 ## 8. Explicit Trust Boundaries
 - **Synthetic Data**: Benchmarks operate on synthetic data schemas.
 - **Scope**: Results reflect performance on the fixed synthetic evaluation suite and do not claim universal production accuracy.
+
+## 9. Runtime & Setup
+
+Recommended runtime: Python 3.10+. Installation and local run steps are identical to the project `README.md`:
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+uvicorn main:app --reload --host 127.0.0.1 --port 8000
+```
+
+Run tests with `make test` and the judge demo with `make test-no-ai`.
+
