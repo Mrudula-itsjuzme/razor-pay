@@ -23,7 +23,7 @@ def evaluate_system(max_layer: int, eval_cases: list, graph_instance=None, as_of
     total_cited = 0
     total_valid_cited = 0
     total_required = 0
-    total_valid_types = 0
+    total_valid_required_types = 0
     
     # Breakdowns
     scenario_breakdown = {}
@@ -69,20 +69,30 @@ def evaluate_system(max_layer: int, eval_cases: list, graph_instance=None, as_of
         
         valid_cited_for_case = 0
         valid_types_found = set()
-        
+        required_types = set(required)
+
         expected_evidence = get_expected_evidence(order_id, ground_truth)
         for eid in cited:
             is_valid = eid in expected_evidence
             if is_valid:
                 valid_cited_for_case += 1
-                valid_types_found.add(eid.split(":")[0])
-                
+                valid_types_found.add(eid.split(":", 1)[0])
+
+        # Requirement recall must be computed at the required-type granularity.
+        # Counting unique valid evidence IDs per case can be inflated by duplicates,
+        # while counting multiple valid IDs for the same required type must not exceed
+        # the number of required types in the applicable contract.
+        valid_required_types_for_case = set()
+        for req_type in required_types:
+            if any(eid.startswith(f"{req_type}:") and eid in expected_evidence for eid in cited):
+                valid_required_types_for_case.add(req_type)
+
         total_valid_cited += valid_cited_for_case
         total_cited += len(cited)
-        total_required += len(required)
-        total_valid_types += len(valid_types_found)
-        
-        has_invalid_proof = (len(cited) > valid_cited_for_case) or (len(valid_types_found) < len(required))
+        total_required += len(required_types)
+        total_valid_required_types += len(valid_required_types_for_case)
+
+        has_invalid_proof = (len(cited) > valid_cited_for_case) or (len(valid_required_types_for_case) < len(required_types))
         
         if decision.startswith("RECONCILED"):
             total_closure_value += exposure
@@ -140,7 +150,7 @@ def evaluate_system(max_layer: int, eval_cases: list, graph_instance=None, as_of
     
     if max_layer >= 4:
         evidence_retrieval_precision = total_valid_cited / total_cited if total_cited > 0 else None
-        evidence_retrieval_recall = total_valid_types / total_required if total_required > 0 else None
+        evidence_retrieval_recall = total_valid_required_types / total_required if total_required > 0 else None
         evidence_retrieval_f1 = 2 * (evidence_retrieval_precision * evidence_retrieval_recall) / (evidence_retrieval_precision + evidence_retrieval_recall) if (evidence_retrieval_precision is not None and evidence_retrieval_recall is not None and evidence_retrieval_precision + evidence_retrieval_recall > 0) else None
     else:
         evidence_retrieval_precision = None

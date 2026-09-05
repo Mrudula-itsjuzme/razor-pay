@@ -4,11 +4,14 @@ from datetime import datetime, timedelta
 from typing import List, Tuple, Dict
 from models import Order, Payment, Refund, Fee, Tax, Settlement, BankTransaction, SettlementItem, LedgerEntry
 
-def generate_case_v2_1(case_id: str, case_index: int, scenario: str, base_time: datetime, as_of_time: datetime) -> Tuple[List, Dict]:
+def generate_case_v2_1(case_id: str, case_index: int, scenario: str, base_time: datetime, as_of_time: datetime, rng: random.Random | None = None) -> Tuple[List, Dict]:
+    if rng is None:
+        rng = random.Random()
+
     records = []
     order_id = case_id
     
-    amount = Decimal(random.randint(100, 50000))
+    amount = Decimal(rng.randint(100, 50000))
     fee_amt = (amount * Decimal('0.02')).quantize(Decimal('0.01'))
     tax_amt = (fee_amt * Decimal('0.18')).quantize(Decimal('0.01'))
     
@@ -141,11 +144,14 @@ def generate_case_v2_1(case_id: str, case_index: int, scenario: str, base_time: 
     
     return records, {"order_id": order_id, "ground_truth": scenario}
 
-def generate_adversarial_case_v2_1(case_id: str, case_index: int, scenario: str, base_time: datetime, as_of_time: datetime) -> Tuple[List, Dict]:
+def generate_adversarial_case_v2_1(case_id: str, case_index: int, scenario: str, base_time: datetime, as_of_time: datetime, rng: random.Random | None = None) -> Tuple[List, Dict]:
+    if rng is None:
+        rng = random.Random()
+
     records = []
     order_id = case_id
     
-    amount = Decimal(random.randint(100, 50000))
+    amount = Decimal(rng.randint(100, 50000))
     fee_amt = (amount * Decimal('0.02')).quantize(Decimal('0.01'))
     tax_amt = (fee_amt * Decimal('0.18')).quantize(Decimal('0.01'))
     
@@ -277,7 +283,9 @@ def generate_adversarial_case_v2_1(case_id: str, case_index: int, scenario: str,
     records.extend(items)
     return records, {"order_id": order_id, "ground_truth": scenario}
 
-def generate_complex_dataset_v2_1() -> Tuple[List, List[Tuple[str, str]], datetime]:
+def generate_complex_dataset_v2_1(seed: int = 4242) -> Tuple[List, List[Tuple[str, str]], datetime]:
+    rng = random.Random(seed)
+
     scenarios_normal = [
         "CLEAN", "PARTIAL_REFUND", "SPLIT_SETTLEMENT", 
         "DELAYED_SETTLEMENT_EXCEPTION", "PENDING_BANK_SLA_SAFE",
@@ -304,14 +312,14 @@ def generate_complex_dataset_v2_1() -> Tuple[List, List[Tuple[str, str]], dateti
     i = 30000
     for scenario in scenarios_normal:
         for _ in range(5):
-            records, case_meta = generate_case_v2_1(str(i), i - 30000, scenario, base_time, as_of_time)
+            records, case_meta = generate_case_v2_1(str(i), i - 30000, scenario, base_time, as_of_time, rng=rng)
             all_records.extend(records)
             all_cases.append((case_meta["order_id"], case_meta["ground_truth"]))
             i += 1
             
     for scenario in scenarios_adv:
         for _ in range(5):
-            records, case_meta = generate_adversarial_case_v2_1(f"adv_{i}", i - 30000, scenario, base_time, as_of_time)
+            records, case_meta = generate_adversarial_case_v2_1(f"adv_{i}", i - 30000, scenario, base_time, as_of_time, rng=rng)
             all_records.extend(records)
             all_cases.append((case_meta["order_id"], case_meta["ground_truth"]))
             i += 1

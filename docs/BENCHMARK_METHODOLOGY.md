@@ -29,8 +29,8 @@ The final reconciliation decisions correspond precisely with the mathematical ex
 The benchmark enforces the proof contract as a first-class policy decision. In lifecycle scenarios where settlement arithmetic implies a fee or tax deduction, the engine requires matching `Fee` or `Tax` evidence before closure. A missing fee record is treated as a proof gap, not as an implicit zero-fee fact. This is the mechanism that prevents the dangerous false-positive closure path described in the hostile missing-fee cases.
 
 ### Proof Metrics
-- **Citation Precision:** 1.0
-- **Requirement Recall:** 0.95
+- **Citation Precision:** 0.9894
+- **Requirement Recall:** 0.9318
 - **Proof-Complete Closure Rate:** 1.0
 - **Broken-Proof Closure Rate:** 0.0
 - **Right-Decision-Wrong-Proof Rate:** 0.0

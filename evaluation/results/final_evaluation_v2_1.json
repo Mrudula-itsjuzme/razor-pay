@@ -4,11 +4,11 @@
   "case_count": 105,
   "record_count": 840,
   "financial_denominator_definition": "expected net settlement value per order",
-  "total_batch_exposure": 2480229.12,
+  "total_batch_exposure": 2401766.15,
   "financial_partition": {
     "PROVEN": {
       "count": 30,
-      "exposure": 723244.37
+      "exposure": 634385.16
     },
     "PENDING_WITHIN_SLA": {
       "count": 0,
@@ -16,11 +16,11 @@
     },
     "MISSING_EVIDENCE": {
       "count": 15,
-      "exposure": 441728.05
+      "exposure": 344978.12
     },
     "CONFLICTING_EVIDENCE": {
       "count": 30,
-      "exposure": 656474.69
+      "exposure": 632295.1
     },
     "AMBIGUOUS_PROVENANCE": {
       "count": 0,
@@ -28,11 +28,11 @@
     },
     "ACCOUNTING_MISMATCH": {
       "count": 15,
-      "exposure": 322500.07
+      "exposure": 428724.57
     },
     "TEMPORAL_EXCEPTION": {
       "count": 5,
-      "exposure": 96163.7
+      "exposure": 120083.53
     },
     "UNRESOLVABLE": {
       "count": 0,
@@ -40,33 +40,33 @@
     },
     "UNCLASSIFIED": {
       "count": 10,
-      "exposure": 240118.24
+      "exposure": 241299.67
     }
   },
   "proof_debt": {
-    "total_unresolved_exposure": 1756984.75,
+    "total_unresolved_exposure": 1767380.99,
     "pending_exposure": 0.0,
-    "actionable_proof_debt": 1756984.75,
+    "actionable_proof_debt": 1767380.99,
     "by_cause": {
-      "SETTLEMENT_SLA_BREACHED": 96163.7,
-      "UNKNOWN": 240118.24,
-      "FEE_RECORD_MISSING": 292280.01,
-      "ACCOUNTING_IDENTITY_FAILURE": 322500.07,
-      "DUPLICATE_FEE_RECORDS": 94071.23,
-      "DUPLICATE_UTR": 130675.52,
-      "CURRENCY_MISMATCH": 139107.71,
-      "WRONG_REFUND_PROVENANCE": 120239.75,
-      "DUPLICATE_BANK_IMPORT": 98303.95,
-      "TAX_RECORD_MISSING": 149448.04,
-      "DUPLICATE_SETTLEMENT_REFERENCE": 74076.53
+      "SETTLEMENT_SLA_BREACHED": 120083.53,
+      "UNKNOWN": 241299.67,
+      "FEE_RECORD_MISSING": 256769.3,
+      "ACCOUNTING_IDENTITY_FAILURE": 428724.57,
+      "DUPLICATE_FEE_RECORDS": 131091.43,
+      "DUPLICATE_UTR": 128195.45,
+      "CURRENCY_MISMATCH": 78928.27,
+      "WRONG_REFUND_PROVENANCE": 98009.07,
+      "DUPLICATE_BANK_IMPORT": 113423.51,
+      "TAX_RECORD_MISSING": 88208.82,
+      "DUPLICATE_SETTLEMENT_REFERENCE": 82647.37
     },
     "by_action": {
-      "Verify settlement status and retrieve bank confirmation.": 96163.7,
-      "Manual human review required.": 240118.24,
-      "Retrieve authoritative fee record.": 292280.01,
-      "Investigate unexplained accounting difference.": 322500.07,
-      "Resolve data conflict before attempting closure.": 656474.69,
-      "Retrieve authoritative tax record.": 149448.04
+      "Verify settlement status and retrieve bank confirmation.": 120083.53,
+      "Manual human review required.": 241299.67,
+      "Retrieve authoritative fee record.": 256769.3,
+      "Investigate unexplained accounting difference.": 428724.57,
+      "Resolve data conflict before attempting closure.": 632295.1,
+      "Retrieve authoritative tax record.": 88208.82
     }
   },
   "3_class_policy_confusion_matrix": {
@@ -121,7 +121,7 @@
   },
   "proof_metrics": {
     "evidence_citation_precision": 0.9893617021276596,
-    "evidence_requirement_recall": 1.0227272727272727,
+    "evidence_requirement_recall": 0.9318181818181818,
     "proof_complete_closure_rate": 1.0,
     "broken_proof_closure_rate": 0.0,
     "right_decision_wrong_proof_rate": 0.0
@@ -381,5 +381,5 @@
     }
   ],
   "test_result": "PASS",
-  "timestamp": "2026-09-05T16:10:43.968270+00:00"
+  "timestamp": "2026-09-05T17:02:40.106373+00:00"
 }

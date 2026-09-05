@@ -35,9 +35,12 @@ def make_graph(records):
                         g.link_bank_transaction_to_settlement(tx.bank_transaction_id, sdata['data'].settlement_id)
     return g
 
+SEED = 4242
+
+
 def main():
-    print("Generating complex dataset v2.1...")
-    cpx_rec, cpx_cases, as_of_time = generate_complex_dataset_v2_1()
+    print(f"Generating complex dataset v2.1 with seed={SEED}...")
+    cpx_rec, cpx_cases, as_of_time = generate_complex_dataset_v2_1(seed=SEED)
     cpx_graph = make_graph(cpx_rec)
     
     # Stratified distribution
@@ -99,7 +102,7 @@ def main():
     
     final = {
         "dataset_version": "COMPLEX_BENCHMARK_V2_1",
-        "seed": 4242,
+        "seed": SEED,
         "case_count": len(cpx_cases),
         "record_count": len(cpx_rec),
         "financial_denominator_definition": "expected net settlement value per order",
