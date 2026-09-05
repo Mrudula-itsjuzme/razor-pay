@@ -21,6 +21,7 @@ Math is plausible.
 Evidence is absent.
 System refuses closure.
 "Plausibility is not proof."
+The system does not silently convert a missing fee record into zero fee; it escalates until the evidence is explicitly observed.
 
 **2:20-3:00**
 Same-amount wrong transaction:

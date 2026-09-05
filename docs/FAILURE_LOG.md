@@ -16,6 +16,13 @@ This document records the major discoveries from the hostile-audit and red-team 
 * **Fix**: Implemented `evidence_slots` that strictly track whether *found* candidates satisfy required types. Missing evidence yields `< 1.0` completeness.
 * **Regression test**: `tests/test_redteam_p0_2.py`
 
+## 2a. Missing Fee / Tax Not Treated as Zero
+* **Finding**: The settlement arithmetic could imply an implicit fee or tax deduction while the ecosystem still silently treated an absent fee/tax record as if the deduction never existed.
+* **Why dangerous**: A seemingly matched net could lead to a false closure simply because the engine equated "missing proof" with "zero amount".
+* **Observed behavior**: The engine accepted lifecycle math without the cash-out fee or tax evidence required by the contract.
+* **Fix**: Full-lifecycle contracts now require matching `Fee` and/or `Tax` proof whenever settlement arithmetic implies the deduction. Missing fee or tax evidence remains a proof gap and forces `ESCALATED` instead of `RECONCILED`.
+* **Regression test**: `tests/test_provenance_hardening.py`
+
 ## 3. AI String-Based Closure Authority
 * **Finding**: The AI Investigator could directly dictate the central `final_decision` by emitting strings like `RECONCILED` or `ESCALATED`.
 * **Why dangerous**: Subjected financial decisions to LLM hallucinations and prompt injection.

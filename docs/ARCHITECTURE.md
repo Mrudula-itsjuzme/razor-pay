@@ -48,6 +48,9 @@ If any single gate evaluates to `False`, `authorize_closure()` returns `False`. 
 ## 3. Evidence / Provenance Model
 Rather than performing loose arithmetic or fuzzy string matching across raw flat tables, the controller models financial lifecycles as a directed acyclic graph $G=(V, E)$. Nodes represent typed domain entities (`Order`, `Payment`, `Fee`, `Tax`, `Refund`, `Settlement`, `BankTransaction`). Edges represent explicit money flow semantics (`GENERATED`, `INCURRED`, `INCLUDED_IN`, `CREDITED_AS`).
 
+### Full-Lifecycle Evidence Contracts
+The contract is not purely amount-based. When a payment lifecycle includes a fee, tax, or a settlement arithmetic adjustment implied by the net difference, the engine upgrades to a `FULL_LIFECYCLE` contract. In that mode, the required proof set can include `Fee` and/or `Tax` as explicit evidence slots. A missing fee record is not treated as a zero-fee claim; it is treated as a proof gap until the supporting evidence is observed.
+
 ## 4. Target Evidence vs. Settlement Context
 When isolating an order for reconciliation, `get_subgraph_for_order` labels nodes with an `is_target_evidence` flag. Subgraph traversal retains sibling settlement items and bank credits strictly for balance verification while blocking peer customer orders from contaminating the target proof context.
 
@@ -60,8 +63,8 @@ When LLM credentials are absent or the model API fails, the system falls back se
 
 ## 6. State Semantics
 - **`RECONCILED`**: All required proof is valid and closure is authorized by the deterministic gate.
-- **`PENDING`**: Required evidence is missing, but no contradiction is observed, and the lifecycle remains strictly within the configured SLA window.
-- **`ESCALATED`**: Contradictory, invalid, provenance-conflicting, temporally impossible evidence is observed, or evidence remains missing beyond SLA.
+- **`PENDING`**: Required evidence is missing, but no contradiction is observed, and the lifecycle remains strictly within the configured SLA window. This applies to the `PENDING_SETTLEMENT` contract, where the bank transaction is not yet present but still within the temporal allowance.
+- **`ESCALATED`**: Contradictory, invalid, provenance-conflicting, temporally impossible evidence is observed, or evidence remains missing beyond SLA. In full-lifecycle cases, missing fee/tax proof for an implied deduction is escalated rather than silently treated as zero-fee.
 
 ## 7. Benchmark Architecture
 - **V2.1 Fixed Benchmark**: 105 cases across 21 adversarial/clean scenario families under fixed seed and static evaluation time.

@@ -15,6 +15,8 @@ The AI Investigator has zero closure authority. It cannot return `RECONCILED` or
 ### 5. What happens when evidence is missing?
 If evidence is missing but no contradiction exists and the transaction is within the SLA window, it resolves to `PENDING`. If the SLA window has expired or evidence is incomplete outside SLA, it resolves to `ESCALATED`.
 
+A missing fee or tax record is never treated as an implicit zero-fee or zero-tax fact. If the lifecycle arithmetic implies a deduction, the engine requires the matching proof before it can close.
+
 ### 6. What happens when the arithmetic balances but provenance is wrong?
 The numbers balance, but the money trail doesn't. If a refund belongs to a different payment lifecycle, or a fee record is missing even if the amount matches, provenance and contradiction checks fail, forcing an `ESCALATED` state.
 

@@ -7,10 +7,10 @@ test-no-ai:
 	PYTHONPATH=. pytest -q tests/test_no_ai.py
 
 eval:
-	PYTHONPATH=. python evaluation/run_v2_1.py
+	PYTHONPATH=. python3 evaluation/run_v2_1.py
 
 eval-scale:
-	PYTHONPATH=. python evaluation/run_scale.py
+	PYTHONPATH=. python3 evaluation/run_scale.py
 
 demo:
 	uvicorn main:app --host 127.0.0.1 --port 8000
