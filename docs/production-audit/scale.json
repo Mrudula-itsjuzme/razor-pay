@@ -1,0 +1,12 @@
+{
+  "case_count": 2500,
+  "record_count": 20079,
+  "total_time_seconds": 0.3995550339999454,
+  "throughput_cases_per_sec": 6256.960336533619,
+  "p50_latency_ms": 0.13006049999830793,
+  "p95_latency_ms": 0.21884944999328576,
+  "unresolved_cases": 971,
+  "measurement_boundary": "Includes get_subgraph_for_order and reconcile_order for each case sequentially. Excludes full graph construction.",
+  "graph_build_time_seconds": 10.430309018000003,
+  "timestamp": "2026-09-06T06:23:00.263751+00:00"
+}
